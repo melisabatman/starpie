@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/client'
 import { createPost } from '@/lib/actions/posts'
 import { useLanguage } from '@/components/LanguageProvider'
 import PostCard from '@/components/PostCard'
+import RichTextEditor, { RichTextEditorRef } from '@/components/RichTextEditor'
 import type { FeedPost, Profile } from '@/lib/types'
 
 // ─── Shared profile info for post cards ──────────────────────
@@ -26,11 +27,13 @@ function CreatePostForm({
 }) {
   const { t } = useLanguage()
   const [content, setContent] = useState('')
+  const [charCount, setCharCount] = useState(0)
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
+  const editorRef = useRef<RichTextEditorRef>(null)
   const supabase = createClient()
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -53,7 +56,7 @@ function CreatePostForm({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!content.trim()) {
+    if (!content.trim() || charCount === 0) {
       setError(t('feed.write_something'))
       return
     }
@@ -77,7 +80,9 @@ function CreatePostForm({
       const result = await createPost(content.trim(), imageUrl)
       if (!result.success || !result.post) throw new Error(result.error ?? 'Gönderi oluşturulamadı')
 
+      editorRef.current?.clearContent()
       setContent('')
+      setCharCount(0)
       clearImage()
       onPostCreated(result.post)
     } catch (err: unknown) {
@@ -95,14 +100,15 @@ function CreatePostForm({
         </div>
       )}
 
-      <textarea
-        id="post-content-input"
-        className="form-textarea create-post-textarea"
+      <RichTextEditor
+        ref={editorRef}
         placeholder={t('feed.placeholder')}
-        value={content}
-        onChange={e => setContent(e.target.value)}
         maxLength={500}
-        rows={3}
+        disabled={loading}
+        onChange={(html, plainText) => {
+          setContent(html)
+          setCharCount(plainText.trim().length)
+        }}
       />
 
       {imagePreview && (
@@ -152,14 +158,14 @@ function CreatePostForm({
           style={{ display: 'none' }}
         />
 
-        <span className="create-post-char-count">{content.length}/500</span>
+        <span className="create-post-char-count">{500 - charCount}</span>
 
         <button
           id="post-submit-btn"
           type="submit"
           className="btn btn--primary"
           style={{ marginTop: 0, width: 'auto', padding: '10px 22px', fontSize: '14px' }}
-          disabled={loading || !content.trim()}
+          disabled={loading || charCount === 0}
         >
           {loading ? (
             <>

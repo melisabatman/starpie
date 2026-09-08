@@ -12,6 +12,8 @@ import {
   deletePost,
 } from '@/lib/actions/posts'
 import { useLanguage } from '@/components/LanguageProvider'
+import FormattedContent from '@/components/FormattedContent'
+import RichTextEditor, { RichTextEditorRef } from '@/components/RichTextEditor'
 import type { FeedPost, PostComment, Profile } from '@/lib/types'
 
 interface PostCardProps {
@@ -52,7 +54,7 @@ export default function PostCard({
   // Post delete state
   const [isDeleting, startDeleteTransition] = useTransition()
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
-  const commentInputRef = useRef<HTMLInputElement>(null)
+  const commentEditorRef = useRef<RichTextEditorRef>(null)
 
   const isOwner = post.user_id === currentUserId
   const author = post.author
@@ -159,16 +161,16 @@ export default function PostCard({
         setErrorMsg('Yorumlar yüklenemedi')
       } finally {
         setLoadingComments(false)
-        setTimeout(() => commentInputRef.current?.focus(), 150)
+        setTimeout(() => commentEditorRef.current?.focus(), 150)
       }
     } else if (nextShow) {
-      setTimeout(() => commentInputRef.current?.focus(), 150)
+      setTimeout(() => commentEditorRef.current?.focus(), 150)
     }
   }
 
   // Submit Comment
-  const handleAddComment = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleAddComment = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault()
     const text = commentText.trim()
     if (!text || isSubmittingComment) return
 
@@ -183,6 +185,7 @@ export default function PostCard({
         setComments(prev => [...prev, res.comment!])
         setCommentsCount(prev => prev + 1)
         setCommentText('')
+        commentEditorRef.current?.clearContent()
       }
     } catch {
       setErrorMsg('Yorum gönderilirken bir hata oluştu')
@@ -340,7 +343,7 @@ export default function PostCard({
       </div>
 
       {/* ── Post Content ── */}
-      <p className="post-card__content">{post.content}</p>
+      <FormattedContent content={post.content} className="post-card__content" />
 
       {/* ── Post Image ── */}
       {post.image_url && (
@@ -479,16 +482,19 @@ export default function PostCard({
               )}
             </div>
 
-            <input
-              ref={commentInputRef}
-              type="text"
-              className="comment-input-field"
-              placeholder={t('feed.write_comment')}
-              value={commentText}
-              onChange={e => setCommentText(e.target.value)}
-              maxLength={300}
-              disabled={isSubmittingComment}
-            />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <RichTextEditor
+                ref={commentEditorRef}
+                compact={true}
+                placeholder={t('feed.write_comment')}
+                maxLength={300}
+                disabled={isSubmittingComment}
+                onChange={(html) => {
+                  setCommentText(html)
+                }}
+                onSubmit={() => handleAddComment()}
+              />
+            </div>
 
             <button
               type="submit"
@@ -569,7 +575,7 @@ export default function PostCard({
                         </Link>
                         <time className="comment-item__time">{commentDate}</time>
                       </div>
-                      <p className="comment-item__text">{c.content}</p>
+                      <FormattedContent content={c.content} className="comment-item__text" />
                     </div>
 
                     {canDelete && (

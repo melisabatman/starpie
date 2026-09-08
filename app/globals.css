@@ -1249,6 +1249,184 @@ body {
   stroke: currentColor;
 }
 
+/* ─── Rich Text Editor (Tiptap) ─── */
+.rich-editor-wrapper {
+  background: white;
+  border: 1.5px solid var(--pink-200);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  display: flex;
+  flex-direction: column;
+}
+
+.rich-editor-wrapper:focus-within {
+  border-color: var(--pink-500);
+  box-shadow: 0 0 0 3px rgba(236, 72, 153, 0.12);
+}
+
+.rich-editor-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 10px;
+  background: #fff8fa;
+  border-bottom: 1px solid var(--pink-100);
+  user-select: none;
+}
+
+.rich-toolbar-btn {
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--gray-600);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-family: inherit;
+  transition: all 0.15s ease;
+}
+
+.rich-toolbar-btn:hover:not(:disabled) {
+  background: var(--pink-100);
+  color: var(--pink-600);
+}
+
+.rich-toolbar-btn.is-active {
+  background: var(--pink-500);
+  color: white;
+  border-color: var(--pink-600);
+  font-weight: 700;
+}
+
+.rich-toolbar-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.rich-editor-content-box {
+  padding: 10px 14px;
+  cursor: text;
+  flex: 1;
+}
+
+.rich-editor-content-box .tiptap {
+  outline: none;
+  font-size: 14.5px;
+  line-height: 1.6;
+  color: var(--gray-800);
+  font-family: inherit;
+  min-height: 70px;
+  word-break: break-word;
+}
+
+.rich-editor-content-box .tiptap p {
+  margin: 0 0 6px 0;
+}
+
+.rich-editor-content-box .tiptap p:last-child {
+  margin-bottom: 0;
+}
+
+.rich-editor-content-box .tiptap strong,
+.rich-editor-content-box .tiptap b {
+  font-weight: 700;
+  color: inherit;
+}
+
+.rich-editor-content-box .tiptap em,
+.rich-editor-content-box .tiptap i {
+  font-style: italic;
+}
+
+.rich-editor-content-box .tiptap u {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* Tiptap Placeholder */
+.rich-editor-content-box .tiptap p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  color: var(--gray-400);
+  pointer-events: none;
+  height: 0;
+}
+
+/* Compact Mode (for comments) */
+.rich-editor--compact {
+  border-radius: var(--radius-lg);
+  border-color: var(--pink-200);
+}
+
+.rich-editor--compact .rich-editor-toolbar {
+  padding: 3px 8px;
+  background: #fffcfd;
+  border-bottom: 1px dashed var(--pink-100);
+  gap: 2px;
+}
+
+.rich-editor--compact .rich-toolbar-btn {
+  width: 22px;
+  height: 22px;
+  min-width: 22px;
+  font-size: 11px;
+  border-radius: 4px;
+}
+
+.rich-editor--compact .rich-editor-content-box {
+  padding: 6px 12px;
+}
+
+.rich-editor--compact .rich-editor-content-box .tiptap {
+  font-size: 13.5px;
+  min-height: 32px;
+  line-height: 1.45;
+}
+
+/* Skeleton */
+.rich-editor-skeleton {
+  background: white;
+  border: 1.5px solid var(--pink-100);
+  border-radius: var(--radius-md);
+  animation: pulse 1.5s infinite ease-in-out;
+}
+
+/* Formatted Content renderer */
+.formatted-rich-text {
+  line-height: 1.6;
+  word-break: break-word;
+  color: inherit;
+}
+
+.formatted-rich-text p {
+  margin: 0 0 6px 0;
+}
+
+.formatted-rich-text p:last-child {
+  margin-bottom: 0;
+}
+
+.formatted-rich-text strong,
+.formatted-rich-text b {
+  font-weight: 700;
+}
+
+.formatted-rich-text em,
+.formatted-rich-text i {
+  font-style: italic;
+}
+
+.formatted-rich-text u {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
 .create-post-preview {
   position: relative;
   border-radius: 12px;
@@ -7573,6 +7751,49 @@ body:has(.app-topbar) {
 
 [data-theme="dark"] .comment-item__text {
   color: #e2d7ea;
+}
+
+[data-theme="dark"] .rich-editor-wrapper {
+  background: #1d1525;
+  border-color: #382444;
+}
+
+[data-theme="dark"] .rich-editor-wrapper:focus-within {
+  border-color: #ec4899;
+  box-shadow: 0 0 0 3px rgba(236, 72, 153, 0.2);
+}
+
+[data-theme="dark"] .rich-editor-toolbar {
+  background: #170f1e;
+  border-bottom-color: #382444;
+}
+
+[data-theme="dark"] .rich-toolbar-btn {
+  color: #d6cae0;
+}
+
+[data-theme="dark"] .rich-toolbar-btn:hover:not(:disabled) {
+  background: #2a152d;
+  color: #f472b6;
+}
+
+[data-theme="dark"] .rich-toolbar-btn.is-active {
+  background: #ec4899;
+  color: white;
+  border-color: #f472b6;
+}
+
+[data-theme="dark"] .rich-editor-content-box .tiptap {
+  color: #faf5ff;
+}
+
+[data-theme="dark"] .rich-editor-content-box .tiptap p.is-editor-empty:first-child::before {
+  color: #7e6f8a;
+}
+
+[data-theme="dark"] .rich-editor--compact .rich-editor-toolbar {
+  background: #170f1e;
+  border-bottom-color: #382444;
 }
 
 /* ─── Dark Mode Blog & Editorial ─── */

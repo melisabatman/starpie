@@ -6,6 +6,8 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { createPost, deletePost } from '@/lib/actions/posts'
 import { useLanguage } from '@/components/LanguageProvider'
+import PostCard from '@/components/PostCard'
+import RichTextEditor, { RichTextEditorRef } from '@/components/RichTextEditor'
 import type { FeedPost, Profile } from '@/lib/types'
 
 interface FeedSectionProps {
@@ -24,11 +26,13 @@ function FeedCreatePostForm({
 }) {
   const { t } = useLanguage()
   const [content, setContent] = useState('')
+  const [charCount, setCharCount] = useState(0)
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
+  const editorRef = useRef<RichTextEditorRef>(null)
   const supabase = createClient()
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -51,7 +55,7 @@ function FeedCreatePostForm({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!content.trim()) {
+    if (!content.trim() || charCount === 0) {
       setError(t('feed.write_something'))
       return
     }
@@ -86,7 +90,9 @@ function FeedCreatePostForm({
         },
       }
 
+      editorRef.current?.clearContent()
       setContent('')
+      setCharCount(0)
       clearImage()
       onPostCreated(newFeedPost)
     } catch (err: unknown) {
@@ -123,14 +129,15 @@ function FeedCreatePostForm({
         </span>
       </div>
 
-      <textarea
-        id="post-content-input"
-        className="form-textarea create-post-textarea"
+      <RichTextEditor
+        ref={editorRef}
         placeholder={t('feed.placeholder')}
-        value={content}
-        onChange={e => setContent(e.target.value)}
         maxLength={500}
-        rows={3}
+        disabled={loading}
+        onChange={(html, plainText) => {
+          setContent(html)
+          setCharCount(plainText.trim().length)
+        }}
       />
 
       {imagePreview && (
@@ -180,7 +187,7 @@ function FeedCreatePostForm({
         </button>
 
         <span className="create-post-counter">
-          {500 - content.length}
+          {500 - charCount}
         </span>
 
         <button
@@ -188,7 +195,7 @@ function FeedCreatePostForm({
           id="post-submit-btn"
           className="btn btn--primary"
           style={{ width: 'auto', padding: '8px 20px', fontSize: '14px', marginTop: 0 }}
-          disabled={loading || !content.trim()}
+          disabled={loading || charCount === 0}
         >
           {loading ? (
             <span className="spinner spinner--sm" />
@@ -206,8 +213,6 @@ function FeedCreatePostForm({
     </form>
   )
 }
-
-import PostCard from '@/components/PostCard'
 
 // ─── Main FeedSection Component ───────────────────────────────
 export default function FeedSection({

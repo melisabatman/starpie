@@ -13,6 +13,10 @@ export async function createPost(
   content: string,
   imageUrl: string | null
 ): Promise<{ success: boolean; post?: FeedPost; error?: string }> {
+  const plainText = content.replace(/<[^>]*>/g, '').trim()
+  if (!plainText) return { success: false, error: 'Lütfen bir şeyler yaz.' }
+  if (plainText.length > 500) return { success: false, error: 'Gönderi en fazla 500 karakter olabilir' }
+
   const supabase = await createClient()
   const {
     data: { user },
@@ -581,8 +585,9 @@ export async function addPostComment(
   content: string
 ): Promise<{ success: boolean; comment?: PostComment; error?: string }> {
   const trimmed = content.trim()
-  if (!trimmed) return { success: false, error: 'Yorum metni boş olamaz' }
-  if (trimmed.length > 300) return { success: false, error: 'Yorum en fazla 300 karakter olabilir' }
+  const plainText = trimmed.replace(/<[^>]*>/g, '').trim()
+  if (!plainText) return { success: false, error: 'Yorum metni boş olamaz' }
+  if (plainText.length > 300) return { success: false, error: 'Yorum en fazla 300 karakter olabilir' }
 
   const supabase = await createClient()
   const {

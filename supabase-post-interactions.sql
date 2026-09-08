@@ -217,15 +217,14 @@ create policy "Users can delete own reposts"
 -- ─────────────────────────────────────────────
 -- 4. GÖNDERİLER (posts) RLS POLİTİKASI GÜNCELLEMESİ
 -- ─────────────────────────────────────────────
--- Arkadaşının yeniden paylaştığı gönderileri de akışta ve profilde görebilmek için posts tablosunun SELECT politikasını güncelliyoruz:
+-- 4. posts TABLOSU SELECT POLİTİKASI GÜNCELLEMESİ
+-- Arkadaşın yeniden paylaştığı gönderilerin akışta ve profilde görünmesi için:
 drop policy if exists "Users and friends can view posts" on public.posts;
 create policy "Users and friends can view posts"
   on public.posts for select
   using (
-    -- Kendi gönderisi
     auth.uid() = user_id
     OR
-    -- Kabul edilmiş arkadaşının gönderisi
     exists (
       select 1
       from public.friendships f
@@ -237,7 +236,6 @@ create policy "Users and friends can view posts"
         )
     )
     OR
-    -- Kabul edilmiş arkadaşının yeniden paylaştığı (repost) gönderi
     exists (
       select 1
       from public.post_reposts pr
@@ -250,3 +248,14 @@ create policy "Users and friends can view posts"
         and f.status = 'accepted'
     )
   );
+
+
+-- ─────────────────────────────────────────────
+-- 5. METİN BİÇİMLENDİRME (RICH TEXT) UYUMLULUĞU
+-- ─────────────────────────────────────────────
+-- Kalın (B), İtalik (I) ve Altı Çizili (U) HTML etiketleri için içerik sınırı genişletmesi:
+alter table if exists public.posts drop constraint if exists posts_content_check;
+alter table if exists public.posts add constraint posts_content_check check (char_length(content) > 0 and char_length(content) <= 3000);
+
+alter table if exists public.post_comments drop constraint if exists post_comments_content_check;
+alter table if exists public.post_comments add constraint post_comments_content_check check (char_length(content) > 0 and char_length(content) <= 2000);
