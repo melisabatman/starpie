@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { checkFriendship } from '@/lib/actions/friends'
+import { sendEmailNotificationIfOffline } from '@/lib/email'
 import type { Message, Conversation, Profile } from '@/lib/types'
 
 // ────────────────────────────────────────────────────────────
@@ -187,6 +188,11 @@ export async function sendMessage(
   revalidatePath('/messages')
   revalidatePath(`/messages/${receiverId}`)
 
+  // Asynchronously trigger offline email notification (non-blocking)
+  sendEmailNotificationIfOffline(data as Message).catch(err => {
+    console.error('[sendMessage] E-posta bildirim hatası:', err)
+  })
+
   return { success: true, message: data as Message }
 }
 
@@ -217,4 +223,51 @@ export async function markMessagesAsRead(senderId: string): Promise<void> {
     .eq('is_read', false)
 
   revalidatePath('/messages')
+}
+
+// ────────────────────────────────────────────────────────────
+// UPDATE USER PRESENCE (HEARTBEAT)
+// ────────────────────────────────────────────────────────────
+
+export async function updatePresence(): Promise<void> {
+  try {
+    const supabase = await createClient()
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+    if (!user) return
+
+    await supabase
+      .from('profiles')
+      .update({ last_seen_at: new Date().toISOString() })
+      .eq('id', user.id)
+  } catch {
+    // Ignore presence heartbeat errors
+  }
+}
+
+// ────────────────────────────────────────────────────────────
+// TOGGLE EMAIL NOTIFICATIONS
+// ────────────────────────────────────────────────────────────
+
+export async function toggleEmailNotifications(
+  enabled: boolean
+): Promise<{ success: boolean; error?: string }> {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) return { success: false, error: 'Giriş yapılmamış' }
+
+  const { error } = await supabase
+    .from('profiles')
+    .update({ email_notifications_enabled: enabled })
+    .eq('id', user.id)
+
+  if (error) return { success: false, error: error.message }
+
+  revalidatePath('/settings')
+  revalidatePath('/profile/setup')
+  return { success: true }
 }

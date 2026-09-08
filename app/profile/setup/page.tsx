@@ -22,7 +22,7 @@ export default async function ProfileSetupPage() {
   // Fetch existing profile if any
   const { data: profile } = await supabase
     .from('profiles')
-    .select('full_name, profession, bio, avatar_url')
+    .select('full_name, profession, bio, avatar_url, email_notifications_enabled')
     .eq('id', user.id)
     .single()
 

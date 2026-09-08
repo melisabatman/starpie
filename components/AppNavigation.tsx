@@ -6,6 +6,8 @@ import Image from 'next/image'
 import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { useLanguage } from '@/components/LanguageProvider'
+import NotificationToggle from '@/components/NotificationToggle'
+import { updatePresence } from '@/lib/actions/messages'
 import type { Profile } from '@/lib/types'
 
 type ThemeMode = 'pink' | 'dark' | 'lavender'
@@ -63,6 +65,29 @@ export default function AppNavigation() {
       authListener.subscription.unsubscribe()
     }
   }, [])
+
+  // 1b. Presence Heartbeat: Keep last_seen_at updated when tab is active
+  useEffect(() => {
+    if (!user?.id) return
+
+    updatePresence()
+
+    const handleFocus = () => {
+      updatePresence()
+    }
+
+    const interval = setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        updatePresence()
+      }
+    }, 2.5 * 60 * 1000)
+
+    window.addEventListener('focus', handleFocus)
+    return () => {
+      window.removeEventListener('focus', handleFocus)
+      clearInterval(interval)
+    }
+  }, [user?.id])
 
   // Close drawer on route change
   useEffect(() => {
@@ -498,6 +523,29 @@ export default function AppNavigation() {
                 </button>
               </div>
             </div>
+
+            {/* Bildirim Tercihi */}
+            <div className="drawer-setting-box" style={{ marginTop: '12px', padding: '12px 14px' }}>
+              <NotificationToggle compact initialEnabled={profile?.email_notifications_enabled ?? true} />
+            </div>
+
+            {/* Tüm Ayarlar Bağlantısı */}
+            <Link
+              href="/settings"
+              className="drawer-link"
+              onClick={() => setIsOpen(false)}
+              style={{ marginTop: '10px', background: 'var(--pink-50)' }}
+            >
+              <div className="drawer-link__icon-box" style={{ background: 'white' }}>⚙️</div>
+              <div className="drawer-link__content">
+                <span className="drawer-link__title" style={{ fontSize: '13.5px' }}>
+                  {t('settings.title')}
+                </span>
+                <span className="drawer-link__desc">
+                  {t('settings.sub')}
+                </span>
+              </div>
+            </Link>
           </div>
 
           {/* Section: Uygulama Hakkında / Yardım (Açılır Kapanır) */}

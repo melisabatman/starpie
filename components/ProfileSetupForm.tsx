@@ -13,6 +13,7 @@ interface Props {
     profession?: string | null
     bio?: string | null
     avatar_url?: string | null
+    email_notifications_enabled?: boolean
   }
 }
 
@@ -21,6 +22,9 @@ export default function ProfileSetupForm({ userId, existingProfile }: Props) {
   const [fullName, setFullName] = useState(existingProfile?.full_name ?? '')
   const [profession, setProfession] = useState(existingProfile?.profession ?? '')
   const [bio, setBio] = useState(existingProfile?.bio ?? '')
+  const [emailNotifications, setEmailNotifications] = useState(
+    existingProfile?.email_notifications_enabled ?? true
+  )
   const [avatarFile, setAvatarFile] = useState<File | null>(null)
   const [avatarPreview, setAvatarPreview] = useState<string | null>(
     existingProfile?.avatar_url ?? null
@@ -86,6 +90,7 @@ export default function ProfileSetupForm({ userId, existingProfile }: Props) {
           profession: profession.trim() || null,
           bio: bio.trim() || null,
           avatar_url: avatarUrl,
+          email_notifications_enabled: emailNotifications,
           updated_at: new Date().toISOString(),
         })
 
@@ -209,6 +214,69 @@ export default function ProfileSetupForm({ userId, existingProfile }: Props) {
           <span style={{ fontSize: '12px', color: 'var(--gray-400)', textAlign: 'right' }}>
             {bio.length}/500
           </span>
+        </div>
+
+        {/* Email Notifications Toggle */}
+        <div style={{ margin: '20px 0 24px' }}>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '14px 16px',
+              borderRadius: 'var(--radius-md)',
+              border: '1px solid rgba(244, 114, 182, 0.28)',
+              background: 'rgba(255, 255, 255, 0.85)',
+              boxShadow: '0 2px 8px rgba(236, 72, 153, 0.05)',
+              gap: '12px',
+            }}
+          >
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '2px' }}>
+                <span style={{ fontSize: '16px' }}>🔔</span>
+                <span style={{ fontSize: '13.5px', fontWeight: 700, color: 'var(--gray-800)' }}>
+                  {t('settings.email_notifications_label')}
+                </span>
+              </div>
+              <p style={{ fontSize: '12px', color: 'var(--gray-500)', margin: 0, lineHeight: 1.35 }}>
+                {t('settings.email_notifications_sub')}
+              </p>
+            </div>
+
+            <button
+              type="button"
+              role="switch"
+              aria-checked={emailNotifications}
+              onClick={() => setEmailNotifications(!emailNotifications)}
+              style={{
+                width: 48,
+                height: 28,
+                borderRadius: 9999,
+                background: emailNotifications ? 'linear-gradient(135deg, var(--pink-600), var(--pink-500))' : '#d1d5db',
+                border: 'none',
+                padding: 3,
+                cursor: 'pointer',
+                position: 'relative',
+                transition: 'background 0.25s ease',
+                outline: 'none',
+                flexShrink: 0,
+                boxShadow: emailNotifications ? '0 2px 8px rgba(219, 39, 119, 0.3)' : 'none',
+              }}
+              title={emailNotifications ? t('settings.notifications_enabled') : t('settings.notifications_disabled')}
+            >
+              <div
+                style={{
+                  width: 22,
+                  height: 22,
+                  borderRadius: '50%',
+                  background: '#ffffff',
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
+                  transform: emailNotifications ? 'translateX(20px)' : 'translateX(0)',
+                  transition: 'transform 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+                }}
+              />
+            </button>
+          </div>
         </div>
 
         <button

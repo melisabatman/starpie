@@ -6,6 +6,8 @@ export type Profile = {
   avatar_url: string | null
   updated_at: string | null
   role?: 'user' | 'admin'
+  email_notifications_enabled?: boolean
+  last_seen_at?: string | null
 }
 
 export type Post = {
