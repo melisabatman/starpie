@@ -7901,3 +7901,53 @@ body:has(.app-topbar) {
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
+
+/* =================== SKELETON & SHIMMER LOADING =================== */
+
+@keyframes shimmerPulse {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.skeleton-shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 182, 193, 0.12) 25%,
+    rgba(255, 182, 193, 0.28) 50%,
+    rgba(255, 182, 193, 0.12) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmerPulse 1.6s ease-in-out infinite;
+}
+
+[data-theme="dark"] .skeleton-shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.04) 25%,
+    rgba(255, 255, 255, 0.09) 50%,
+    rgba(255, 255, 255, 0.04) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmerPulse 1.6s ease-in-out infinite;
+}
+
+.skeleton-box {
+  border-radius: var(--radius-md, 12px);
+  position: relative;
+  overflow: hidden;
+}
+
+.skeleton-text {
+  height: 14px;
+  border-radius: 6px;
+  margin-bottom: 8px;
+}
+
+.skeleton-circle {
+  border-radius: 50%;
+}
+

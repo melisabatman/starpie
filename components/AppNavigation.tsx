@@ -229,7 +229,7 @@ export default function AppNavigation() {
       <header className="app-topbar">
         <div className="app-topbar__inner">
           {/* Brand Logo */}
-          <Link href="/feed" className="app-brand" aria-label="Starpie">
+          <Link href="/feed" prefetch={true} className="app-brand" aria-label="Starpie">
             <div className="app-brand__logo">
               <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                 <path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z" />
@@ -244,6 +244,7 @@ export default function AppNavigation() {
               <Link
                 key={item.href}
                 href={item.href}
+                prefetch={true}
                 className={`app-nav-link ${item.active ? 'app-nav-link--active' : ''}`}
               >
                 <span className="app-nav-link__icon">{item.icon}</span>
@@ -259,6 +260,7 @@ export default function AppNavigation() {
             {userId && (
               <Link
                 href={`/profile/${userId}`}
+                prefetch={true}
                 className="app-user-chip"
                 title={profile?.full_name ?? t('profile.my_profile')}
               >
@@ -318,6 +320,7 @@ export default function AppNavigation() {
           <Link
             key={item.href}
             href={item.href}
+            prefetch={true}
             className={`app-bottom-item ${item.active ? 'app-bottom-item--active' : ''}`}
           >
             <span className="app-bottom-item__icon">{item.icon}</span>
@@ -407,6 +410,7 @@ export default function AppNavigation() {
             {/* Admin Blog / Köşe Yazıları */}
             <Link
               href="/blog"
+              prefetch={true}
               className={`drawer-link ${pathname.startsWith('/blog') ? 'drawer-link--active' : ''}`}
               onClick={() => setIsOpen(false)}
             >
@@ -427,6 +431,7 @@ export default function AppNavigation() {
             {/* Tarot Falı */}
             <Link
               href="/tarot"
+              prefetch={true}
               className={`drawer-link ${pathname.startsWith('/tarot') ? 'drawer-link--active' : ''}`}
               onClick={() => setIsOpen(false)}
             >
@@ -444,6 +449,7 @@ export default function AppNavigation() {
             {/* Profili Düzenle */}
             <Link
               href="/profile/setup"
+              prefetch={true}
               className="drawer-link"
               onClick={() => setIsOpen(false)}
             >
@@ -542,6 +548,7 @@ export default function AppNavigation() {
             {/* Tüm Ayarlar Bağlantısı */}
             <Link
               href="/settings"
+              prefetch={true}
               className="drawer-link"
               onClick={() => setIsOpen(false)}
               style={{ marginTop: '10px', background: 'var(--pink-50)' }}

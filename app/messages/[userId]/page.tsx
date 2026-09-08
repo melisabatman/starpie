@@ -1,12 +1,10 @@
 import type { Metadata } from 'next'
-import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
+import { getCachedUser, getCachedProfile } from '@/lib/supabase/cached'
 import { checkFriendship } from '@/lib/actions/friends'
 import { getMessages } from '@/lib/actions/messages'
 import ChatWindow from '@/components/ChatWindow'
 import ChatLockedNotice from '@/components/ChatLockedNotice'
-import type { Profile } from '@/lib/types'
 
 interface Props {
   params: Promise<{ userId: string }>
@@ -14,12 +12,7 @@ interface Props {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { userId } = await params
-  const supabase = await createClient()
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('full_name')
-    .eq('id', userId)
-    .single()
+  const profile = await getCachedProfile(userId)
 
   return {
     title: profile?.full_name ? `${profile.full_name} ile Sohbet — Starpie` : 'Sohbet — Starpie',
@@ -28,11 +21,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function DirectChatPage({ params }: Props) {
   const { userId } = await params
-  const supabase = await createClient()
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const user = await getCachedUser()
 
   if (!user) redirect('/')
 
@@ -41,12 +30,8 @@ export default async function DirectChatPage({ params }: Props) {
     redirect('/messages')
   }
 
-  // Fetch partner profile
-  const { data: partner } = await supabase
-    .from('profiles')
-    .select('id, full_name, profession, avatar_url')
-    .eq('id', userId)
-    .single<Profile>()
+  // Fetch partner profile using request cache
+  const partner = await getCachedProfile(userId)
 
   if (!partner) {
     notFound()
@@ -75,3 +60,4 @@ export default async function DirectChatPage({ params }: Props) {
     </div>
   )
 }
+

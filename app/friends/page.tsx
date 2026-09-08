@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
+import { getCachedUser } from '@/lib/supabase/cached'
 import { getFriendRequests, getFriends } from '@/lib/actions/friends'
 import PageHeader from '@/components/PageHeader'
 import FriendsHub from '@/components/FriendsHub'
@@ -12,10 +12,7 @@ export const metadata: Metadata = {
 }
 
 export default async function FriendsPage() {
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const user = await getCachedUser()
 
   if (!user) redirect('/')
 

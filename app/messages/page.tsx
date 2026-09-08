@@ -1,7 +1,6 @@
 import type { Metadata } from 'next'
-import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
+import { getCachedUser } from '@/lib/supabase/cached'
 import { getConversations } from '@/lib/actions/messages'
 import PageHeader from '@/components/PageHeader'
 import ConversationList from '@/components/ConversationList'
@@ -12,10 +11,7 @@ export const metadata: Metadata = {
 }
 
 export default async function MessagesPage() {
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const user = await getCachedUser()
 
   if (!user) redirect('/')
 
@@ -44,3 +40,4 @@ export default async function MessagesPage() {
     </div>
   )
 }
+

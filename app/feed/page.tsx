@@ -1,10 +1,9 @@
 import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
+import { getCachedUser, getCachedCurrentProfile } from '@/lib/supabase/cached'
 import { getFeedPosts } from '@/lib/actions/posts'
 import PageHeader from '@/components/PageHeader'
 import FeedSection from '@/components/FeedSection'
-import type { Profile } from '@/lib/types'
 
 export const metadata: Metadata = {
   title: 'Akış & Ana Sayfa — Starpie',
@@ -12,24 +11,17 @@ export const metadata: Metadata = {
 }
 
 export default async function FeedPage() {
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const user = await getCachedUser()
 
   if (!user) redirect('/')
 
-  // Fetch current user profile
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', user.id)
-    .single<Profile>()
+  // Fetch current user profile and feed posts in parallel
+  const [profile, posts] = await Promise.all([
+    getCachedCurrentProfile(),
+    getFeedPosts(),
+  ])
 
   if (!profile) redirect('/profile/setup')
-
-  // Fetch feed posts
-  const posts = await getFeedPosts()
 
   return (
     <div className="profile-page">

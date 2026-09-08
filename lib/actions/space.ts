@@ -1,6 +1,7 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
+import { getCachedUser } from '@/lib/supabase/cached'
 import { revalidatePath } from 'next/cache'
 import { checkFriendship } from '@/lib/actions/friends'
 import type { CoupleSpace, Memory, MoodEntry, Profile, SharedEvent, JournalEntry } from '@/lib/types'
@@ -14,14 +15,13 @@ export async function getActiveSpace(): Promise<{
   pendingInvitesReceived: CoupleSpace[]
   pendingInvitesSent: CoupleSpace[]
 }> {
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const user = await getCachedUser()
 
   if (!user) {
     return { activeSpace: null, pendingInvitesReceived: [], pendingInvitesSent: [] }
   }
+
+  const supabase = await createClient()
 
   const { data: spaces, error } = await supabase
     .from('couple_spaces')

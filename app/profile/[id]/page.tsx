@@ -2,7 +2,7 @@ import { notFound, redirect } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
 import type { Metadata } from 'next'
-import { createClient } from '@/lib/supabase/server'
+import { getCachedUser, getCachedProfile, getCachedCurrentProfile } from '@/lib/supabase/cached'
 import ProfileCardView, { ProfileFooterNotice, ProfileSuspendedNotice } from '@/components/ProfileCardView'
 import ProfileContentTabs from '@/components/ProfileContentTabs'
 import PageHeader from '@/components/PageHeader'
@@ -17,12 +17,7 @@ interface Props {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params
-  const supabase = await createClient()
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('full_name, profession')
-    .eq('id', id)
-    .single()
+  const profile = await getCachedProfile(id)
 
   if (!profile) return { title: 'Profil — Starpie' }
 
@@ -36,51 +31,35 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function ProfilePage({ params }: Props) {
   const { id } = await params
-  const supabase = await createClient()
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const user = await getCachedUser()
 
   if (!user) redirect('/')
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', id)
-    .single<Profile>()
+  const isOwnProfile = user.id === id
+
+  // Fetch target profile, current user profile (if viewing another profile), and friendship check concurrently
+  const [profile, cProfile, isFriendsWith] = await Promise.all([
+    getCachedProfile(id),
+    isOwnProfile ? Promise.resolve(null) : getCachedCurrentProfile(),
+    isOwnProfile ? Promise.resolve(true) : checkFriendship(id),
+  ])
 
   if (!profile) {
     if (user.id === id) redirect('/profile/setup')
     notFound()
   }
 
-  const isOwnProfile = user.id === id
+  const currentUserProfile = isOwnProfile ? profile : (cProfile || profile)
   const initials = profile.full_name
     ? profile.full_name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
     : '?'
 
-  // Run data fetches in parallel
-  const [friends, isFriendsWith] = await Promise.all([
+  // Fetch friends (if own profile) and posts / timeline in parallel
+  const [friends, posts, timelinePosts]: [any[], FeedPost[], TimelinePost[]] = await Promise.all([
     isOwnProfile ? getFriends() : Promise.resolve([]),
-    isOwnProfile ? Promise.resolve(true) : checkFriendship(id),
+    isFriendsWith ? getProfilePosts(id) : Promise.resolve([]),
+    isFriendsWith ? getTimelinePosts(id) : Promise.resolve([]),
   ])
-
-  // Fetch current user profile if looking at another profile
-  let currentUserProfile = profile
-  if (!isOwnProfile) {
-    const { data: cProfile } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', user.id)
-      .single<Profile>()
-    if (cProfile) currentUserProfile = cProfile
-  }
-
-  // Fetch posts and timeline messages only if allowed (own profile or friend)
-  const [posts, timelinePosts]: [FeedPost[], TimelinePost[]] = isFriendsWith
-    ? await Promise.all([getProfilePosts(id), getTimelinePosts(id)])
-    : [[], []]
 
   return (
     <div className="profile-page">

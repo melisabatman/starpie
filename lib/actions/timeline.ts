@@ -1,6 +1,7 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
+import { getCachedUser } from '@/lib/supabase/cached'
 import { revalidatePath } from 'next/cache'
 import { checkFriendship } from '@/lib/actions/friends'
 import type { TimelinePost, Profile } from '@/lib/types'
@@ -13,10 +14,7 @@ export async function getTimelinePosts(
   wallUserId: string,
   limit: number = 30
 ): Promise<TimelinePost[]> {
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const user = await getCachedUser()
 
   if (!user) return []
 
@@ -28,28 +26,32 @@ export async function getTimelinePosts(
   }
 
   // 1. Fetch timeline posts
-  const { data: posts, error } = await supabase
+  const supabase = await createClient()
+  const { data: postsData, error } = await supabase
     .from('timeline_posts')
     .select('*')
     .eq('wall_user_id', wallUserId)
     .order('created_at', { ascending: false })
     .limit(limit)
 
-  if (error || !posts || posts.length === 0) {
+  const posts = (postsData as TimelinePost[]) || []
+  if (error || posts.length === 0) {
     return []
   }
 
   // 2. Batch fetch author profiles
-  const authorIds = Array.from(new Set(posts.map(p => p.author_id)))
+  const authorIds = Array.from(new Set(posts.map((p: TimelinePost) => p.author_id)))
   const { data: profiles } = await supabase
     .from('profiles')
     .select('id, full_name, profession, avatar_url, role')
     .in('id', authorIds)
 
   const profileMap = new Map<string, Pick<Profile, 'id' | 'full_name' | 'profession' | 'avatar_url' | 'role'>>()
-  profiles?.forEach(p => profileMap.set(p.id, p))
+  profiles?.forEach((p: Pick<Profile, 'id' | 'full_name' | 'profession' | 'avatar_url' | 'role'>) =>
+    profileMap.set(p.id, p)
+  )
 
-  return posts.map(p => ({
+  return posts.map((p: TimelinePost) => ({
     ...p,
     author: profileMap.get(p.author_id) ?? null,
   }))

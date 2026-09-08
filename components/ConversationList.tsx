@@ -50,6 +50,11 @@ export default function ConversationList({
   const { isUserOnline } = usePresence(currentUserId)
   const [conversations, setConversations] = useState<Conversation[]>(initialConversations)
   const [searchFilter, setSearchFilter] = useState('')
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   // Supabase Realtime for live inbox updates
   useEffect(() => {
@@ -189,7 +194,7 @@ export default function ConversationList({
                     ) : (
                       <span className="conv-item__fallback">{initials}</span>
                     )}
-                    {isUserOnline(friend.id) && (
+                    {mounted && isUserOnline(friend.id) && (
                       <span className="conv-online-badge" title={t('messages.online')} />
                     )}
                   </div>
@@ -198,7 +203,7 @@ export default function ConversationList({
                     <div className="conv-item__row">
                       <h4 className="conv-item__name">{friend.full_name ?? 'User'}</h4>
                       <span className="conv-item__time" suppressHydrationWarning>
-                        {formatRelativeTime(last_message?.created_at, lang)}
+                        {mounted ? formatRelativeTime(last_message?.created_at, lang) : ''}
                       </span>
                     </div>
 
@@ -259,7 +264,7 @@ export default function ConversationList({
                     ) : (
                       <span className="conv-item__fallback">{initials}</span>
                     )}
-                    {isUserOnline(friend.id) && (
+                    {mounted && isUserOnline(friend.id) && (
                       <span className="conv-online-badge" title={t('messages.online')} />
                     )}
                   </div>

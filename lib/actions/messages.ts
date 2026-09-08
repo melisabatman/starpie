@@ -1,6 +1,7 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
+import { getCachedUser } from '@/lib/supabase/cached'
 import { revalidatePath } from 'next/cache'
 import { checkFriendship } from '@/lib/actions/friends'
 import { sendEmailNotificationIfOffline } from '@/lib/email'
@@ -11,12 +12,10 @@ import type { Message, Conversation, Profile } from '@/lib/types'
 // ────────────────────────────────────────────────────────────
 
 export async function getConversations(): Promise<Conversation[]> {
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
+  const user = await getCachedUser()
   if (!user) return []
+
+  const supabase = await createClient()
 
   // 1. Get all accepted friendships for current user
   const { data: friendships, error: friendError } = await supabase
@@ -34,22 +33,23 @@ export async function getConversations(): Promise<Conversation[]> {
     f.sender_id === user.id ? f.receiver_id : f.sender_id
   )
 
-  // 2. Fetch profiles of all friends
-  const { data: profiles } = await supabase
-    .from('profiles')
-    .select('id, full_name, profession, avatar_url')
-    .in('id', friendIds)
+  // 2 & 3. Concurrently fetch profiles of friends and recent messages involving user
+  const [profilesRes, messagesRes] = await Promise.all([
+    supabase
+      .from('profiles')
+      .select('id, full_name, profession, avatar_url')
+      .in('id', friendIds),
+    supabase
+      .from('messages')
+      .select('id, sender_id, receiver_id, content, created_at, is_read, message_type')
+      .or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`)
+      .order('created_at', { ascending: false }),
+  ])
 
+  const profiles = profilesRes.data
   if (!profiles || profiles.length === 0) return []
 
-  // 3. Fetch messages involving the user (only necessary columns for preview and unread count)
-  const { data: messages } = await supabase
-    .from('messages')
-    .select('id, sender_id, receiver_id, content, created_at, is_read')
-    .or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`)
-    .order('created_at', { ascending: false })
-
-  const allMessages = (messages as Message[]) ?? []
+  const allMessages = (messagesRes.data as Message[]) ?? []
 
   // 4. Build conversation list for each friend
   const conversations: Conversation[] = profiles.map(profile => {
@@ -94,17 +94,14 @@ export async function getConversations(): Promise<Conversation[]> {
 // ────────────────────────────────────────────────────────────
 
 export async function getMessages(partnerId: string): Promise<Message[]> {
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
+  const user = await getCachedUser()
   if (!user) return []
 
   // Security gate: users MUST be accepted friends
   const isFriend = await checkFriendship(partnerId)
   if (!isFriend) return []
 
+  const supabase = await createClient()
   const { data, error } = await supabase
     .from('messages')
     .select('*')

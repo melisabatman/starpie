@@ -1,12 +1,11 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
+import { getCachedUser, getCachedCurrentProfile } from '@/lib/supabase/cached'
 import { getActiveSpace, getMemories, getTodayMoods, getPastMoods, getSharedEvents, getJournalEntries } from '@/lib/actions/space'
 import { getFriends } from '@/lib/actions/friends'
 import PageHeader from '@/components/PageHeader'
 import SpaceHub from '@/components/SpaceHub'
-import type { Profile } from '@/lib/types'
 
 export const metadata: Metadata = {
   title: 'Ortak Alan & Takvim — Starpie',
@@ -14,25 +13,15 @@ export const metadata: Metadata = {
 }
 
 export default async function SpacePage() {
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const user = await getCachedUser()
 
   if (!user) redirect('/')
 
-  // Fetch current user's profile
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', user.id)
-    .single<Profile>()
+  // Run profile, space, and friends fetches in parallel
+  const [profile, { activeSpace, pendingInvitesReceived, pendingInvitesSent }, friends] =
+    await Promise.all([getCachedCurrentProfile(), getActiveSpace(), getFriends()])
 
   if (!profile) redirect('/profile/setup')
-
-  // Run initial fetches in parallel
-  const [{ activeSpace, pendingInvitesReceived, pendingInvitesSent }, friends] =
-    await Promise.all([getActiveSpace(), getFriends()])
 
   // Fetch memories, moods, calendar events, and journal entries if space is active
   const [memories, todayMoods, pastMoods, events, journalEntries] = activeSpace

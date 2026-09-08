@@ -71,6 +71,11 @@ export default function ChatWindow({
   const [inputText, setInputText] = useState('')
   const [isSending, setIsSending] = useState(false)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   // ── Voice Recording State ──
   const [isRecording, setIsRecording] = useState(false)
@@ -408,14 +413,14 @@ export default function ChatWindow({
               <span className="chat-header__fallback">{partnerInitials}</span>
             )}
             <span
-              className={`chat-online-dot ${isPartnerOnline ? 'chat-online-dot--online' : 'chat-online-dot--offline'}`}
-              title={isPartnerOnline ? t('messages.online') : t('messages.offline')}
+              className={`chat-online-dot ${mounted && isPartnerOnline ? 'chat-online-dot--online' : 'chat-online-dot--offline'}`}
+              title={mounted && isPartnerOnline ? t('messages.online') : t('messages.offline')}
             />
           </div>
 
           <div className="chat-header__info">
             <h2 className="chat-header__name">{partner.full_name ?? 'İsimsiz'}</h2>
-            {isPartnerOnline ? (
+            {mounted && isPartnerOnline ? (
               <p
                 className="chat-header__sub chat-header__sub--online"
                 style={{ color: '#10b981', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}
@@ -486,9 +491,9 @@ export default function ChatWindow({
 
                   <div className="chat-bubble__meta">
                     <span className="chat-bubble__time" suppressHydrationWarning>
-                      {formatTime(msg.created_at, lang, t('messages.yesterday'))}
+                      {mounted ? formatTime(msg.created_at, lang, t('messages.yesterday')) : ''}
                     </span>
-                    {isMe && (
+                    {isMe && mounted && (
                       <span
                         className={`chat-bubble__status ${msg.is_read ? 'chat-bubble__status--read' : 'chat-bubble__status--sent'}`}
                         title={msg.is_read ? t('messages.seen') : t('messages.sent')}

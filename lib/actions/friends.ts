@@ -1,6 +1,7 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
+import { getCachedUser, getCachedFriendship } from '@/lib/supabase/cached'
 import { revalidatePath } from 'next/cache'
 import type { FriendRequest, Friend, SearchUser } from '@/lib/types'
 
@@ -126,12 +127,10 @@ export async function removeFriendship(
 // ────────────────────────────────────────────────────────────
 
 export async function getFriendRequests(): Promise<FriendRequest[]> {
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const user = await getCachedUser()
   if (!user) return []
 
+  const supabase = await createClient()
   const { data: requests } = await supabase
     .from('friendships')
     .select('id, sender_id, created_at')
@@ -158,12 +157,10 @@ export async function getFriendRequests(): Promise<FriendRequest[]> {
 // ────────────────────────────────────────────────────────────
 
 export async function getFriends(): Promise<Friend[]> {
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const user = await getCachedUser()
   if (!user) return []
 
+  const supabase = await createClient()
   const { data: friendships } = await supabase
     .from('friendships')
     .select('id, sender_id, receiver_id')
@@ -195,21 +192,8 @@ export async function getFriends(): Promise<Friend[]> {
 // ────────────────────────────────────────────────────────────
 
 export async function checkFriendship(targetUserId: string): Promise<boolean> {
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const user = await getCachedUser()
   if (!user) return false
-
-  // Check both sender→receiver and receiver→sender directions
-  const { count } = await supabase
-    .from('friendships')
-    .select('id', { count: 'exact', head: true })
-    .eq('status', 'accepted')
-    .or(
-      `and(sender_id.eq.${user.id},receiver_id.eq.${targetUserId}),and(sender_id.eq.${targetUserId},receiver_id.eq.${user.id})`
-    )
-
-  return (count ?? 0) > 0
+  return getCachedFriendship(user.id, targetUserId)
 }
 

@@ -1,6 +1,7 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
+import { getCachedUser } from '@/lib/supabase/cached'
 import { revalidatePath } from 'next/cache'
 import { checkFriendship } from '@/lib/actions/friends'
 import type { Post, FeedPost, PostComment } from '@/lib/types'
@@ -60,33 +61,28 @@ export async function createPost(
 }
 
 export async function getFeedPosts(limit: number = 20, offset: number = 0): Promise<FeedPost[]> {
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const user = await getCachedUser()
   if (!user) return []
 
-  // 1. Fetch posts visible through RLS (own + friends + friends' reposted posts)
-  const { data: postsData } = await supabase
-    .from('posts')
-    .select('*')
-    .order('created_at', { ascending: false })
-    .range(offset, offset + limit - 1)
+  const supabase = await createClient()
 
-  const posts: Post[] = (postsData as Post[]) || []
-
-  // 2. Fetch reposts visible through RLS (own + friends)
-  let repostsData: Array<{ id: string; post_id: string; user_id: string; created_at: string }> = []
-  try {
-    const { data: rData } = await supabase
+  // 1 & 2. Concurrently fetch posts and reposts visible through RLS
+  const [postsRes, repostsRes] = await Promise.all([
+    supabase
+      .from('posts')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .range(offset, offset + limit - 1),
+    supabase
       .from('post_reposts')
       .select('id, post_id, user_id, created_at')
       .order('created_at', { ascending: false })
-      .range(offset, offset + limit - 1)
-    if (rData) repostsData = rData
-  } catch {
-    // If post_reposts table does not exist yet
-  }
+      .range(offset, offset + limit - 1),
+  ])
+
+  const posts: Post[] = (postsRes.data as Post[]) || []
+  const repostsData: Array<{ id: string; post_id: string; user_id: string; created_at: string }> =
+    repostsRes.data || []
 
   // 3. If any repost references a post not in posts, try fetching it
   const existingPostIds = new Set(posts.map(p => p.id))
@@ -109,7 +105,7 @@ export async function getFeedPosts(limit: number = 20, offset: number = 0): Prom
 
   if (allPostIds.length === 0) return []
 
-  // 4. Batch fetch author and reposter profiles
+  // 4 & 5. Concurrently batch fetch author/reposter profiles, likes, and comments
   const allUserIds = Array.from(
     new Set([
       ...posts.map(p => p.user_id),
@@ -117,47 +113,37 @@ export async function getFeedPosts(limit: number = 20, offset: number = 0): Prom
     ])
   )
 
-  const { data: profiles } = await supabase
-    .from('profiles')
-    .select('id, full_name, profession, avatar_url, role')
-    .in('id', allUserIds)
-
-  const profileMap = new Map((profiles || []).map(p => [p.id, p]))
-
-  // 5. Batch fetch likes, comments, and reposts stats
-  const likeCounts = new Map<string, number>()
-  const userLiked = new Set<string>()
-
-  try {
-    const { data: likes } = await supabase
+  const [profilesRes, likesRes, commentsRes] = await Promise.all([
+    supabase
+      .from('profiles')
+      .select('id, full_name, profession, avatar_url, role')
+      .in('id', allUserIds),
+    supabase
       .from('post_likes')
       .select('post_id, user_id')
-      .in('post_id', allPostIds)
+      .in('post_id', allPostIds),
+    supabase
+      .from('post_comments')
+      .select('id, post_id')
+      .in('post_id', allPostIds),
+  ])
 
-    if (likes) {
-      likes.forEach(l => {
-        likeCounts.set(l.post_id, (likeCounts.get(l.post_id) || 0) + 1)
-        if (l.user_id === user.id) userLiked.add(l.post_id)
-      })
-    }
-  } catch {
-    // Graceful fallback
+  const profileMap = new Map((profilesRes.data || []).map(p => [p.id, p]))
+
+  const likeCounts = new Map<string, number>()
+  const userLiked = new Set<string>()
+  if (likesRes.data) {
+    likesRes.data.forEach(l => {
+      likeCounts.set(l.post_id, (likeCounts.get(l.post_id) || 0) + 1)
+      if (l.user_id === user.id) userLiked.add(l.post_id)
+    })
   }
 
   const commentCounts = new Map<string, number>()
-  try {
-    const { data: comments } = await supabase
-      .from('post_comments')
-      .select('id, post_id')
-      .in('post_id', allPostIds)
-
-    if (comments) {
-      comments.forEach(c => {
-        commentCounts.set(c.post_id, (commentCounts.get(c.post_id) || 0) + 1)
-      })
-    }
-  } catch {
-    // Graceful fallback
+  if (commentsRes.data) {
+    commentsRes.data.forEach(c => {
+      commentCounts.set(c.post_id, (commentCounts.get(c.post_id) || 0) + 1)
+    })
   }
 
   const repostCounts = new Map<string, number>()
@@ -227,10 +213,7 @@ export async function getProfilePosts(
   limit: number = 20,
   offset: number = 0
 ): Promise<FeedPost[]> {
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const user = await getCachedUser()
   if (!user) return []
 
   const isSelf = user.id === targetUserId
@@ -239,29 +222,27 @@ export async function getProfilePosts(
     if (!isFriend) return []
   }
 
-  // 1. Posts authored by target user
-  const { data: postsData } = await supabase
-    .from('posts')
-    .select('*')
-    .eq('user_id', targetUserId)
-    .order('created_at', { ascending: false })
-    .range(offset, offset + limit - 1)
+  const supabase = await createClient()
 
-  const posts: Post[] = (postsData as Post[]) || []
-
-  // 2. Reposts by target user
-  let repostsData: Array<{ id: string; post_id: string; user_id: string; created_at: string }> = []
-  try {
-    const { data: rData } = await supabase
+  // 1 & 2. Concurrently fetch posts and reposts authored by target user
+  const [postsRes, repostsRes] = await Promise.all([
+    supabase
+      .from('posts')
+      .select('*')
+      .eq('user_id', targetUserId)
+      .order('created_at', { ascending: false })
+      .range(offset, offset + limit - 1),
+    supabase
       .from('post_reposts')
       .select('id, post_id, user_id, created_at')
       .eq('user_id', targetUserId)
       .order('created_at', { ascending: false })
-      .range(offset, offset + limit - 1)
-    if (rData) repostsData = rData
-  } catch {
-    // Table may not exist yet
-  }
+      .range(offset, offset + limit - 1),
+  ])
+
+  const posts: Post[] = (postsRes.data as Post[]) || []
+  const repostsData: Array<{ id: string; post_id: string; user_id: string; created_at: string }> =
+    repostsRes.data || []
 
   // 3. Fetch missing original posts for target user's reposts
   const existingPostIds = new Set(posts.map(p => p.id))
@@ -284,7 +265,7 @@ export async function getProfilePosts(
 
   if (allPostIds.length === 0) return []
 
-  // 4. Batch fetch author and reposter profiles
+  // 4 & 5. Concurrently batch fetch profiles, likes, comments, and reposts
   const allUserIds = Array.from(
     new Set([
       ...posts.map(p => p.user_id),
@@ -292,64 +273,50 @@ export async function getProfilePosts(
     ])
   )
 
-  const { data: profiles } = await supabase
-    .from('profiles')
-    .select('id, full_name, profession, avatar_url, role')
-    .in('id', allUserIds)
-
-  const profileMap = new Map((profiles || []).map(p => [p.id, p]))
-
-  // 5. Batch stats
-  const likeCounts = new Map<string, number>()
-  const userLiked = new Set<string>()
-  try {
-    const { data: likes } = await supabase
+  const [profilesRes, likesRes, commentsRes, allRepostsRes] = await Promise.all([
+    supabase
+      .from('profiles')
+      .select('id, full_name, profession, avatar_url, role')
+      .in('id', allUserIds),
+    supabase
       .from('post_likes')
       .select('post_id, user_id')
-      .in('post_id', allPostIds)
+      .in('post_id', allPostIds),
+    supabase
+      .from('post_comments')
+      .select('id, post_id')
+      .in('post_id', allPostIds),
+    supabase
+      .from('post_reposts')
+      .select('id, post_id, user_id')
+      .in('post_id', allPostIds),
+  ])
 
-    if (likes) {
-      likes.forEach(l => {
-        likeCounts.set(l.post_id, (likeCounts.get(l.post_id) || 0) + 1)
-        if (l.user_id === user.id) userLiked.add(l.post_id)
-      })
-    }
-  } catch {
-    // Graceful fallback
+  const profileMap = new Map((profilesRes.data || []).map(p => [p.id, p]))
+
+  const likeCounts = new Map<string, number>()
+  const userLiked = new Set<string>()
+  if (likesRes.data) {
+    likesRes.data.forEach(l => {
+      likeCounts.set(l.post_id, (likeCounts.get(l.post_id) || 0) + 1)
+      if (l.user_id === user.id) userLiked.add(l.post_id)
+    })
   }
 
   const commentCounts = new Map<string, number>()
-  try {
-    const { data: comments } = await supabase
-      .from('post_comments')
-      .select('id, post_id')
-      .in('post_id', allPostIds)
-
-    if (comments) {
-      comments.forEach(c => {
-        commentCounts.set(c.post_id, (commentCounts.get(c.post_id) || 0) + 1)
-      })
-    }
-  } catch {
-    // Graceful fallback
+  if (commentsRes.data) {
+    commentsRes.data.forEach(c => {
+      commentCounts.set(c.post_id, (commentCounts.get(c.post_id) || 0) + 1)
+    })
   }
 
   const repostCounts = new Map<string, number>()
   const userReposted = new Set<string>()
-  try {
-    const { data: allRepostsList } = await supabase
-      .from('post_reposts')
-      .select('id, post_id, user_id')
-      .in('post_id', allPostIds)
-
-    if (allRepostsList) {
-      allRepostsList.forEach(r => {
-        repostCounts.set(r.post_id, (repostCounts.get(r.post_id) || 0) + 1)
-        if (r.user_id === user.id) userReposted.add(r.post_id)
-      })
-    }
-  } catch {
-    // Graceful fallback
+  if (allRepostsRes.data) {
+    allRepostsRes.data.forEach(r => {
+      repostCounts.set(r.post_id, (repostCounts.get(r.post_id) || 0) + 1)
+      if (r.user_id === user.id) userReposted.add(r.post_id)
+    })
   }
 
   // 6. Build items
