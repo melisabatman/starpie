@@ -80,6 +80,17 @@ export async function createTimelinePost(
     return { success: false, error: 'Giriş yapmanız gerekiyor.' }
   }
 
+  // Check caller ban status
+  const { data: callerProfile } = await supabase
+    .from('profiles')
+    .select('is_banned')
+    .eq('id', user.id)
+    .single()
+
+  if (callerProfile?.is_banned) {
+    return { success: false, error: 'Hesabınız askıya alınmıştır.' }
+  }
+
   // Privacy check: only wall owner or accepted friends can post
   const isSelf = user.id === wallUserId
   if (!isSelf) {
@@ -150,10 +161,17 @@ export async function deleteTimelinePost(
     return { success: false, error: 'Mesaj bulunamadı.' }
   }
 
+  const { data: callerProfile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .single()
+
+  const isAdmin = callerProfile?.role === 'admin'
   const isWallOwner = post.wall_user_id === user.id
   const isAuthor = post.author_id === user.id
 
-  if (!isWallOwner && !isAuthor) {
+  if (!isWallOwner && !isAuthor && !isAdmin) {
     return { success: false, error: 'Bu mesajı silme yetkiniz bulunmuyor.' }
   }
 

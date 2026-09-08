@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
+import { usePresence } from '@/lib/hooks/usePresence'
 import { useLanguage } from '@/components/LanguageProvider'
 import type { Conversation, Message } from '@/lib/types'
 
@@ -46,6 +47,7 @@ export default function ConversationList({
   initialConversations,
 }: ConversationListProps) {
   const { t, lang } = useLanguage()
+  const { isUserOnline } = usePresence(currentUserId)
   const [conversations, setConversations] = useState<Conversation[]>(initialConversations)
   const [searchFilter, setSearchFilter] = useState('')
 
@@ -187,7 +189,9 @@ export default function ConversationList({
                     ) : (
                       <span className="conv-item__fallback">{initials}</span>
                     )}
-                    <span className="conv-online-badge" />
+                    {isUserOnline(friend.id) && (
+                      <span className="conv-online-badge" title={t('messages.online')} />
+                    )}
                   </div>
 
                   <div className="conv-item__content">
@@ -254,6 +258,9 @@ export default function ConversationList({
                       />
                     ) : (
                       <span className="conv-item__fallback">{initials}</span>
+                    )}
+                    {isUserOnline(friend.id) && (
+                      <span className="conv-online-badge" title={t('messages.online')} />
                     )}
                   </div>
 

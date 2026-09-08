@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { sendMessage, sendVoiceMessage, markMessagesAsRead } from '@/lib/actions/messages'
 import AudioMessagePlayer from '@/components/AudioMessagePlayer'
+import { usePresence } from '@/lib/hooks/usePresence'
 import { useLanguage } from '@/components/LanguageProvider'
 import type { Message, Profile } from '@/lib/types'
 
@@ -64,6 +65,8 @@ export default function ChatWindow({
   initialMessages,
 }: ChatWindowProps) {
   const { t, lang } = useLanguage()
+  const { isUserOnline } = usePresence(currentUserId)
+  const isPartnerOnline = isUserOnline(partner.id)
   const [messages, setMessages] = useState<Message[]>(initialMessages)
   const [inputText, setInputText] = useState('')
   const [isSending, setIsSending] = useState(false)
@@ -139,6 +142,20 @@ export default function ChatWindow({
               markMessagesAsRead(partner.id)
             }
           }
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'messages',
+        },
+        payload => {
+          const updatedMsg = payload.new as Message
+          setMessages(prev =>
+            prev.map(m => (m.id === updatedMsg.id ? { ...m, ...updatedMsg } : m))
+          )
         }
       )
       .subscribe()
@@ -390,15 +407,26 @@ export default function ChatWindow({
             ) : (
               <span className="chat-header__fallback">{partnerInitials}</span>
             )}
-            <span className="chat-online-dot" title="Aktif" />
+            <span
+              className={`chat-online-dot ${isPartnerOnline ? 'chat-online-dot--online' : 'chat-online-dot--offline'}`}
+              title={isPartnerOnline ? t('messages.online') : t('messages.offline')}
+            />
           </div>
 
           <div className="chat-header__info">
             <h2 className="chat-header__name">{partner.full_name ?? 'İsimsiz'}</h2>
-            {partner.profession ? (
-              <p className="chat-header__sub">{partner.profession}</p>
+            {isPartnerOnline ? (
+              <p
+                className="chat-header__sub chat-header__sub--online"
+                style={{ color: '#10b981', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}
+              >
+                <span style={{ display: 'inline-block', width: 7, height: 7, borderRadius: '50%', background: '#10b981' }} />
+                {t('messages.online')}
+              </p>
             ) : (
-              <p className="chat-header__sub chat-header__sub--status">Arkadaşın</p>
+              <p className="chat-header__sub chat-header__sub--offline" style={{ color: 'var(--gray-400)' }}>
+                {partner.profession ? `✦ ${partner.profession}` : t('messages.offline')}
+              </p>
             )}
           </div>
         </Link>
@@ -462,36 +490,48 @@ export default function ChatWindow({
                     </span>
                     {isMe && (
                       <span
-                        className="chat-bubble__status"
-                        title={msg.is_read ? t('common.yes') : t('common.no')}
+                        className={`chat-bubble__status ${msg.is_read ? 'chat-bubble__status--read' : 'chat-bubble__status--sent'}`}
+                        title={msg.is_read ? t('messages.seen') : t('messages.sent')}
                       >
                         {msg.is_read ? (
-                          <svg
-                            width="14"
-                            height="14"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2.5"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          >
-                            <polyline points="18 6 7 17 2 12" />
-                            <polyline points="22 10 13 19 11 17" />
-                          </svg>
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                            <svg
+                              width="14"
+                              height="14"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2.5"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              style={{ color: '#0284c7' }}
+                            >
+                              <polyline points="18 6 7 17 2 12" />
+                              <polyline points="22 10 13 19 11 17" />
+                            </svg>
+                            <span style={{ fontSize: '10.5px', fontWeight: 600, color: '#0284c7' }}>
+                              {t('messages.seen')}
+                            </span>
+                          </span>
                         ) : (
-                          <svg
-                            width="12"
-                            height="12"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2.5"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          >
-                            <polyline points="20 6 9 17 4 12" />
-                          </svg>
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                            <svg
+                              width="12"
+                              height="12"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2.5"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              style={{ opacity: 0.7 }}
+                            >
+                              <polyline points="20 6 9 17 4 12" />
+                            </svg>
+                            <span style={{ fontSize: '10px', opacity: 0.8 }}>
+                              {t('messages.sent')}
+                            </span>
+                          </span>
                         )}
                       </span>
                     )}

@@ -71,6 +71,8 @@ function PostCard({
   const commentEditorRef = useRef<RichTextEditorRef>(null)
 
   const isOwner = post.user_id === currentUserId
+  const isAdmin = currentUserProfile?.role === 'admin'
+  const canDeletePost = isOwner || isAdmin
   const author = post.author
 
   // Format date
@@ -209,8 +211,11 @@ function PostCard({
   }
 
   // Delete Comment
-  const handleDeleteComment = async (commentId: string) => {
-    if (!confirm(t('feed.delete_comment_confirm'))) return
+  const handleDeleteComment = async (commentId: string, isAuthorOfComment: boolean) => {
+    const confirmMsg = isAdmin && !isAuthorOfComment
+      ? t('admin.delete_comment_confirm')
+      : t('feed.delete_comment_confirm')
+    if (!confirm(confirmMsg)) return
 
     try {
       const res = await deletePostComment(commentId)
@@ -227,7 +232,10 @@ function PostCard({
 
   // Delete Post
   const handleDeletePost = () => {
-    if (!confirm(t('feed.delete_confirm'))) return
+    const confirmMsg = isAdmin && !isOwner
+      ? t('admin.delete_post_confirm')
+      : t('feed.delete_confirm')
+    if (!confirm(confirmMsg)) return
     startDeleteTransition(async () => {
       const res = await deletePost(post.id)
       if (res.success && onDelete) {
@@ -325,13 +333,13 @@ function PostCard({
           </div>
         </Link>
 
-        {isOwner && (
+        {canDeletePost && (
           <button
-            className="post-delete-btn"
+            className={`post-delete-btn ${isAdmin && !isOwner ? 'post-delete-btn--admin' : ''}`}
             onClick={handleDeletePost}
             disabled={isDeleting}
-            title={t('feed.delete_btn')}
-            aria-label={t('feed.delete_btn')}
+            title={isAdmin && !isOwner ? t('admin.delete_post') : t('feed.delete_btn')}
+            aria-label={isAdmin && !isOwner ? t('admin.delete_post') : t('feed.delete_btn')}
           >
             {isDeleting ? (
               <span className="spinner spinner--sm" />
@@ -550,7 +558,8 @@ function PostCard({
           ) : (
             <div className="comments-list">
               {comments.map(c => {
-                const canDelete = c.user_id === currentUserId || isOwner
+                const isCommentAuthor = c.user_id === currentUserId
+                const canDelete = isCommentAuthor || isOwner || isAdmin
                 const commentDate = new Intl.DateTimeFormat(
                   lang === 'tr' ? 'tr-TR' : 'en-US',
                   {
@@ -601,9 +610,9 @@ function PostCard({
                       <button
                         type="button"
                         className="comment-item__delete"
-                        onClick={() => handleDeleteComment(c.id)}
-                        title={t('feed.delete_btn')}
-                        aria-label={t('feed.delete_btn')}
+                        onClick={() => handleDeleteComment(c.id, isCommentAuthor)}
+                        title={isAdmin && !isCommentAuthor ? t('admin.delete_comment') : t('feed.delete_btn')}
+                        aria-label={isAdmin && !isCommentAuthor ? t('admin.delete_comment') : t('feed.delete_btn')}
                       >
                         <svg
                           width="12"

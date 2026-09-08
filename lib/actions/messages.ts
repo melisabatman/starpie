@@ -158,6 +158,17 @@ export async function sendMessage(
     return { success: false, error: 'Kendinize mesaj gönderemezsiniz.' }
   }
 
+  // Check caller ban status
+  const { data: callerProfile } = await supabase
+    .from('profiles')
+    .select('is_banned')
+    .eq('id', user.id)
+    .single()
+
+  if (callerProfile?.is_banned) {
+    return { success: false, error: 'Hesabınız askıya alınmıştır. Mesaj gönderemezsiniz.' }
+  }
+
   // Security check: Must be accepted friends
   const isFriend = await checkFriendship(receiverId)
   if (!isFriend) {

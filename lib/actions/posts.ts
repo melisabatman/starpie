@@ -23,6 +23,17 @@ export async function createPost(
   } = await supabase.auth.getUser()
   if (!user) return { success: false, error: 'Giriş yapılmamış' }
 
+  // Fetch current user's profile for ban check and FeedPost display
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('id, full_name, profession, avatar_url, role, is_banned')
+    .eq('id', user.id)
+    .single()
+
+  if (profile?.is_banned) {
+    return { success: false, error: 'Hesabınız askıya alınmıştır. Gönderi paylaşamazsınız.' }
+  }
+
   const { data, error } = await supabase
     .from('posts')
     .insert({ user_id: user.id, content, image_url: imageUrl })
@@ -30,13 +41,6 @@ export async function createPost(
     .single()
 
   if (error) return { success: false, error: error.message }
-
-  // Fetch current user's profile for immediate FeedPost display
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('id, full_name, profession, avatar_url, role')
-    .eq('id', user.id)
-    .single()
 
   const feedPost: FeedPost = {
     ...(data as Post),
@@ -420,6 +424,17 @@ export async function toggleLikePost(
   } = await supabase.auth.getUser()
   if (!user) return { success: false, error: 'Giriş yapılmamış' }
 
+  // Check caller ban status
+  const { data: callerProfile } = await supabase
+    .from('profiles')
+    .select('is_banned')
+    .eq('id', user.id)
+    .single()
+
+  if (callerProfile?.is_banned) {
+    return { success: false, error: 'Hesabınız askıya alınmıştır.' }
+  }
+
   // Check post owner
   const { data: post, error: postErr } = await supabase
     .from('posts')
@@ -489,6 +504,17 @@ export async function toggleRepost(
     data: { user },
   } = await supabase.auth.getUser()
   if (!user) return { success: false, error: 'Giriş yapılmamış' }
+
+  // Check caller ban status
+  const { data: callerProfile } = await supabase
+    .from('profiles')
+    .select('is_banned')
+    .eq('id', user.id)
+    .single()
+
+  if (callerProfile?.is_banned) {
+    return { success: false, error: 'Hesabınız askıya alınmıştır.' }
+  }
 
   // Check post owner
   const { data: post, error: postErr } = await supabase
@@ -619,6 +645,17 @@ export async function addPostComment(
     }
   }
 
+  // Check caller ban status
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('id, full_name, profession, avatar_url, role, is_banned')
+    .eq('id', user.id)
+    .single()
+
+  if (profile?.is_banned) {
+    return { success: false, error: 'Hesabınız askıya alınmıştır.' }
+  }
+
   const { data, error } = await supabase
     .from('post_comments')
     .insert({ post_id: postId, user_id: user.id, content: trimmed })
@@ -626,12 +663,6 @@ export async function addPostComment(
     .single()
 
   if (error) return { success: false, error: error.message }
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('id, full_name, profession, avatar_url, role')
-    .eq('id', user.id)
-    .single()
 
   const newComment: PostComment = {
     ...(data as PostComment),
@@ -671,10 +702,17 @@ export async function deletePostComment(
     .eq('id', comment.post_id)
     .single()
 
+  const { data: callerProfile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .single()
+
+  const isAdmin = callerProfile?.role === 'admin'
   const isCommentOwner = comment.user_id === user.id
   const isPostOwner = post?.user_id === user.id
 
-  if (!isCommentOwner && !isPostOwner) {
+  if (!isCommentOwner && !isPostOwner && !isAdmin) {
     return { success: false, error: 'Bu yorumu silme yetkiniz yok' }
   }
 
@@ -703,14 +741,36 @@ export async function deletePost(
   } = await supabase.auth.getUser()
   if (!user) return { success: false, error: 'Giriş yapılmamış' }
 
+  // Fetch post to verify ownership or admin
+  const { data: post, error: fetchErr } = await supabase
+    .from('posts')
+    .select('id, user_id')
+    .eq('id', postId)
+    .single()
+
+  if (fetchErr || !post) return { success: false, error: 'Gönderi bulunamadı' }
+
+  // Check caller role
+  const { data: callerProfile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .single()
+
+  const isAdmin = callerProfile?.role === 'admin'
+  const isOwner = post.user_id === user.id
+
+  if (!isOwner && !isAdmin) {
+    return { success: false, error: 'Bu gönderiyi silme yetkiniz yok' }
+  }
+
   const { error } = await supabase
     .from('posts')
     .delete()
     .eq('id', postId)
-    .eq('user_id', user.id) // güvenlik: sadece kendi gönderisi
 
   if (error) return { success: false, error: error.message }
-  revalidatePath(`/profile/${user.id}`)
+  revalidatePath(`/profile/${post.user_id}`)
   revalidatePath('/feed')
   return { success: true }
 }

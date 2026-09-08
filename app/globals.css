@@ -2027,11 +2027,55 @@ body {
   position: absolute;
   bottom: 0px;
   right: 0px;
-  width: 11px;
-  height: 11px;
-  background: #10b981;
-  border: 2px solid white;
+  width: 12px;
+  height: 12px;
   border-radius: 50%;
+  border: 2px solid white;
+  transition: all 0.3s ease;
+}
+
+.chat-online-dot--online {
+  background: #10b981;
+  box-shadow: 0 0 0 2px white, 0 0 8px rgba(16, 185, 129, 0.6);
+  animation: presencePulse 2s infinite ease-in-out;
+}
+
+.chat-online-dot--offline {
+  background: #9ca3af;
+  box-shadow: 0 0 0 2px white;
+}
+
+@keyframes presencePulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7), 0 0 0 2px white;
+  }
+  70% {
+    box-shadow: 0 0 0 5px rgba(16, 185, 129, 0), 0 0 0 2px white;
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0), 0 0 0 2px white;
+  }
+}
+
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.post-delete-btn--admin {
+  color: #e11d48 !important;
+  background: rgba(244, 63, 94, 0.12) !important;
+}
+
+.post-delete-btn--admin:hover {
+  background: rgba(244, 63, 94, 0.25) !important;
+  color: #be123c !important;
 }
 
 .chat-header__info {

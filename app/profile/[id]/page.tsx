@@ -3,7 +3,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import type { Metadata } from 'next'
 import { createClient } from '@/lib/supabase/server'
-import ProfileCardView, { ProfileFooterNotice } from '@/components/ProfileCardView'
+import ProfileCardView, { ProfileFooterNotice, ProfileSuspendedNotice } from '@/components/ProfileCardView'
 import ProfileContentTabs from '@/components/ProfileContentTabs'
 import PageHeader from '@/components/PageHeader'
 import { getFriends, checkFriendship } from '@/lib/actions/friends'
@@ -134,20 +134,43 @@ export default async function ProfilePage({ params }: Props) {
             profile={profile}
             isOwnProfile={isOwnProfile}
             isFriendsWith={isFriendsWith}
+            currentUserProfile={currentUserProfile}
           />
         </div>
 
-        {/* ── Posts & Timeline Section ── */}
+        {/* ── Posts & Timeline Section or Suspended Notice ── */}
         <div style={{ marginTop: '24px' }} data-aos="fade-up" data-aos-delay="100">
-          <ProfileContentTabs
-            isOwnProfile={isOwnProfile}
-            isFriendsWith={isFriendsWith}
-            profile={profile}
-            currentUserId={user.id}
-            currentUserProfile={currentUserProfile}
-            initialPosts={posts}
-            initialTimelinePosts={timelinePosts}
-          />
+          {profile.is_banned && currentUserProfile?.role !== 'admin' ? (
+            <ProfileSuspendedNotice />
+          ) : (
+            <>
+              {profile.is_banned && currentUserProfile?.role === 'admin' && (
+                <div
+                  className="alert alert--error"
+                  style={{
+                    marginBottom: '16px',
+                    borderRadius: '16px',
+                    padding: '12px 18px',
+                    background: 'rgba(255, 241, 242, 0.95)',
+                    border: '1.5px solid rgba(244, 63, 94, 0.4)',
+                    color: '#be123c',
+                    fontSize: '13.5px',
+                  }}
+                >
+                  ⚠️ <strong>Yönetici Uyarısı:</strong> Bu kullanıcının hesabı askıya alınmıştır (banlı). Normal kullanıcılar bu profili göremez.
+                </div>
+              )}
+              <ProfileContentTabs
+                isOwnProfile={isOwnProfile}
+                isFriendsWith={isFriendsWith}
+                profile={profile}
+                currentUserId={user.id}
+                currentUserProfile={currentUserProfile}
+                initialPosts={posts}
+                initialTimelinePosts={timelinePosts}
+              />
+            </>
+          )}
         </div>
 
         {/* Dynamic Footer */}

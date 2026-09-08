@@ -1,21 +1,59 @@
 'use client'
 
+import { useState, useTransition } from 'react'
 import Link from 'next/link'
 import { useLanguage } from '@/components/LanguageProvider'
+import { toggleUserBan } from '@/lib/actions/admin'
 import type { Profile } from '@/lib/types'
 
 interface ProfileCardViewProps {
   profile: Profile
   isOwnProfile: boolean
   isFriendsWith: boolean
+  currentUserProfile?: Profile | null
 }
 
 export default function ProfileCardView({
   profile,
   isOwnProfile,
   isFriendsWith,
+  currentUserProfile,
 }: ProfileCardViewProps) {
   const { t } = useLanguage()
+  const [isBanned, setIsBanned] = useState(!!profile.is_banned)
+  const [isPending, startTransition] = useTransition()
+  const [adminFeedback, setAdminFeedback] = useState<string | null>(null)
+
+  const isAdmin = currentUserProfile?.role === 'admin'
+
+  const handleToggleBan = () => {
+    const confirmMsg = isBanned
+      ? t('admin.unban_confirm')
+      : t('admin.ban_confirm')
+
+    if (!confirm(confirmMsg)) return
+
+    const nextState = !isBanned
+    setIsBanned(nextState)
+    setAdminFeedback(null)
+
+    startTransition(async () => {
+      try {
+        const res = await toggleUserBan(profile.id, nextState)
+        if (!res.success) {
+          setIsBanned(!nextState) // rollback
+          setAdminFeedback(res.error || 'İşlem başarısız')
+        } else {
+          setAdminFeedback(
+            nextState ? 'Kullanıcı banlandı 🚫' : 'Kullanıcının banı kaldırıldı ✨'
+          )
+        }
+      } catch {
+        setIsBanned(!nextState)
+        setAdminFeedback('Bir hata oluştu')
+      }
+    })
+  }
 
   return (
     <>
@@ -83,6 +121,68 @@ export default function ProfileCardView({
           </div>
         </div>
       )}
+
+      {/* ── Admin Controls Section ── */}
+      {isAdmin && !isOwnProfile && (
+        <div
+          className="admin-profile-controls"
+          style={{
+            marginTop: '20px',
+            padding: '16px 20px',
+            borderRadius: '16px',
+            background: isBanned ? 'rgba(244, 63, 94, 0.08)' : 'rgba(255, 255, 255, 0.75)',
+            border: isBanned ? '1.5px solid rgba(244, 63, 94, 0.35)' : '1.5px dashed rgba(244, 114, 182, 0.4)',
+            textAlign: 'center',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginBottom: '8px' }}>
+            <span style={{ fontSize: '12px', fontWeight: 800, letterSpacing: '0.05em', color: '#be123c', textTransform: 'uppercase' }}>
+              {t('admin.panel_title')}
+            </span>
+          </div>
+
+          <p style={{ fontSize: '13px', fontWeight: 600, color: isBanned ? '#e11d48' : '#059669', marginBottom: '12px' }}>
+            {isBanned ? t('admin.banned_status') : t('admin.active_status')}
+          </p>
+
+          <button
+            type="button"
+            onClick={handleToggleBan}
+            disabled={isPending}
+            className="btn"
+            style={{
+              padding: '8px 22px',
+              fontSize: '13px',
+              fontWeight: 700,
+              borderRadius: '9999px',
+              cursor: 'pointer',
+              transition: 'all 0.2s',
+              background: isBanned
+                ? 'linear-gradient(135deg, #10b981, #059669)'
+                : 'linear-gradient(135deg, #e11d48, #f43f5e)',
+              color: '#ffffff',
+              border: 'none',
+              boxShadow: isBanned
+                ? '0 4px 14px rgba(16, 185, 129, 0.3)'
+                : '0 4px 14px rgba(225, 29, 72, 0.3)',
+            }}
+          >
+            {isPending ? (
+              <span className="spinner spinner--sm" />
+            ) : isBanned ? (
+              t('admin.unban_user')
+            ) : (
+              t('admin.ban_user')
+            )}
+          </button>
+
+          {adminFeedback && (
+            <p style={{ marginTop: '8px', fontSize: '12px', color: '#be123c', fontWeight: 600 }}>
+              {adminFeedback}
+            </p>
+          )}
+        </div>
+      )}
     </>
   )
 }
@@ -102,6 +202,28 @@ export function ProfileLockedNotice() {
       >
         {t('profile.find_friends_btn')}
       </Link>
+    </div>
+  )
+}
+
+export function ProfileSuspendedNotice() {
+  const { t } = useLanguage()
+
+  return (
+    <div
+      className="posts-locked"
+      style={{
+        borderColor: 'rgba(244, 63, 94, 0.3)',
+        background: 'rgba(255, 241, 242, 0.8)',
+      }}
+    >
+      <div className="posts-locked__icon">🚫</div>
+      <p className="posts-locked__title" style={{ color: '#be123c' }}>
+        {t('admin.banned_badge')}
+      </p>
+      <p className="posts-locked__sub">
+        {t('admin.banned_profile_notice')}
+      </p>
     </div>
   )
 }

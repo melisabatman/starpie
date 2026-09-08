@@ -8,6 +8,7 @@ export type Profile = {
   role?: 'user' | 'admin'
   email_notifications_enabled?: boolean
   last_seen_at?: string | null
+  is_banned?: boolean
 }
 
 export type Post = {

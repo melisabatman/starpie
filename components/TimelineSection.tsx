@@ -209,7 +209,8 @@ export default function TimelineSection({
           {posts.map(post => {
             const author = post.author
             const isPostAuthor = post.author_id === currentUserId
-            const canDelete = isOwnProfile || isPostAuthor
+            const isAdmin = currentUserProfile?.role === 'admin'
+            const canDelete = isOwnProfile || isPostAuthor || isAdmin
 
             const authorInitials = author?.full_name
               ? author.full_name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)

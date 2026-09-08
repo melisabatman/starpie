@@ -7,6 +7,8 @@ import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { useLanguage } from '@/components/LanguageProvider'
 import NotificationToggle from '@/components/NotificationToggle'
+import BannedScreen from '@/components/BannedScreen'
+import { usePresence } from '@/lib/hooks/usePresence'
 import { updatePresence } from '@/lib/actions/messages'
 import type { Profile } from '@/lib/types'
 
@@ -141,6 +143,14 @@ export default function AppNavigation() {
       router.push('/')
       router.refresh()
     })
+  }
+
+  // Track global presence for online status
+  usePresence(user?.id)
+
+  // If user is banned, lock access completely with BannedScreen
+  if (profile?.is_banned) {
+    return <BannedScreen />
   }
 
   // Do not show navigation on auth screen if user is not logged in
