@@ -384,6 +384,7 @@ export default function ChatWindow({
                 alt={partner.full_name ?? 'Avatar'}
                 width={42}
                 height={42}
+                sizes="42px"
                 style={{ objectFit: 'cover', borderRadius: '50%' }}
               />
             ) : (

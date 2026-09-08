@@ -224,6 +224,8 @@ export default function PolaroidGallery({
                       alt="Preview"
                       width={350}
                       height={350}
+                      sizes="(max-width: 640px) 100vw, 350px"
+                      unoptimized={previewUrl.startsWith('blob:')}
                       className="memory-preview-img"
                     />
                     <div className="memory-change-hint">

@@ -181,6 +181,7 @@ export default function ConversationList({
                         alt={friend.full_name ?? 'Avatar'}
                         width={50}
                         height={50}
+                        sizes="50px"
                         style={{ objectFit: 'cover', borderRadius: '50%' }}
                       />
                     ) : (
@@ -248,6 +249,7 @@ export default function ConversationList({
                         alt={friend.full_name ?? 'Avatar'}
                         width={50}
                         height={50}
+                        sizes="50px"
                         style={{ objectFit: 'cover', borderRadius: '50%' }}
                       />
                     ) : (

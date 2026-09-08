@@ -41,10 +41,10 @@ export async function getConversations(): Promise<Conversation[]> {
 
   if (!profiles || profiles.length === 0) return []
 
-  // 3. Fetch all messages involving the user
+  // 3. Fetch messages involving the user (only necessary columns for preview and unread count)
   const { data: messages } = await supabase
     .from('messages')
-    .select('*')
+    .select('id, sender_id, receiver_id, content, created_at, is_read')
     .or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`)
     .order('created_at', { ascending: false })
 

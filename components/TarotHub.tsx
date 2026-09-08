@@ -1,10 +1,18 @@
 'use client'
 
 import { useState } from 'react'
+import dynamic from 'next/dynamic'
 import TarotExperience from '@/components/TarotExperience'
-import TarotHistory from '@/components/TarotHistory'
 import { useLanguage } from '@/components/LanguageProvider'
 import type { TarotReading } from '@/lib/types'
+
+const TarotHistory = dynamic(() => import('@/components/TarotHistory'), {
+  loading: () => (
+    <div style={{ textAlign: 'center', padding: '40px 0' }}>
+      <span className="spinner spinner--sm" />
+    </div>
+  ),
+})
 
 interface TarotHubProps {
   initialHistory: TarotReading[]

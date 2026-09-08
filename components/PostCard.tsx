@@ -1,8 +1,9 @@
 'use client'
 
-import { useState, useTransition, useRef } from 'react'
+import { useState, useTransition, useRef, memo } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
+import dynamic from 'next/dynamic'
 import {
   toggleLikePost,
   toggleRepost,
@@ -13,8 +14,21 @@ import {
 } from '@/lib/actions/posts'
 import { useLanguage } from '@/components/LanguageProvider'
 import FormattedContent from '@/components/FormattedContent'
-import RichTextEditor, { RichTextEditorRef } from '@/components/RichTextEditor'
+import type { RichTextEditorRef } from '@/components/RichTextEditor'
 import type { FeedPost, PostComment, Profile } from '@/lib/types'
+
+const RichTextEditor = dynamic(() => import('@/components/RichTextEditor'), {
+  ssr: false,
+  loading: () => (
+    <div
+      style={{
+        height: 38,
+        borderRadius: 8,
+        background: 'rgba(255, 182, 193, 0.15)',
+      }}
+    />
+  ),
+})
 
 interface PostCardProps {
   post: FeedPost
@@ -23,7 +37,7 @@ interface PostCardProps {
   onDelete?: (id: string) => void
 }
 
-export default function PostCard({
+function PostCard({
   post,
   currentUserId,
   currentUserProfile,
@@ -276,6 +290,7 @@ export default function PostCard({
                 alt={author.full_name ?? 'Avatar'}
                 width={42}
                 height={42}
+                sizes="42px"
                 style={{
                   objectFit: 'cover',
                   width: '100%',
@@ -353,6 +368,8 @@ export default function PostCard({
             alt="Post Image"
             width={600}
             height={400}
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 680px, 600px"
+            loading="lazy"
             style={{
               objectFit: 'cover',
               width: '100%',
@@ -471,6 +488,7 @@ export default function PostCard({
                   alt="My Avatar"
                   width={28}
                   height={28}
+                  sizes="28px"
                   style={{ borderRadius: '50%', objectFit: 'cover' }}
                 />
               ) : (
@@ -556,6 +574,7 @@ export default function PostCard({
                           alt={c.author.full_name ?? 'User'}
                           width={26}
                           height={26}
+                          sizes="26px"
                           style={{ borderRadius: '50%', objectFit: 'cover' }}
                         />
                       ) : (
@@ -611,3 +630,5 @@ export default function PostCard({
     </article>
   )
 }
+
+export default memo(PostCard)

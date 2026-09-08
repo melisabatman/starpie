@@ -1,14 +1,28 @@
 'use client'
 
-import { useState, useRef, useTransition } from 'react'
+import { useState, useRef, useTransition, useCallback } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
+import dynamic from 'next/dynamic'
 import { createClient } from '@/lib/supabase/client'
-import { createPost, deletePost } from '@/lib/actions/posts'
+import { createPost, deletePost, getFeedPosts } from '@/lib/actions/posts'
 import { useLanguage } from '@/components/LanguageProvider'
 import PostCard from '@/components/PostCard'
-import RichTextEditor, { RichTextEditorRef } from '@/components/RichTextEditor'
+import type { RichTextEditorRef } from '@/components/RichTextEditor'
 import type { FeedPost, Profile } from '@/lib/types'
+
+const RichTextEditor = dynamic(() => import('@/components/RichTextEditor'), {
+  ssr: false,
+  loading: () => (
+    <div
+      style={{
+        height: 80,
+        borderRadius: 12,
+        background: 'rgba(255, 182, 193, 0.12)',
+      }}
+    />
+  ),
+})
 
 interface FeedSectionProps {
   currentUserId: string
@@ -118,6 +132,7 @@ function FeedCreatePostForm({
               alt={profile.full_name ?? 'Avatar'}
               width={36}
               height={36}
+              sizes="36px"
               style={{ objectFit: 'cover', borderRadius: '50%' }}
             />
           ) : (
@@ -147,6 +162,7 @@ function FeedCreatePostForm({
             alt="Preview"
             width={540}
             height={280}
+            sizes="(max-width: 640px) 100vw, 540px"
             style={{ objectFit: 'cover', width: '100%', height: 'auto', maxHeight: 280, borderRadius: 10 }}
             unoptimized
           />
@@ -222,13 +238,31 @@ export default function FeedSection({
 }: FeedSectionProps) {
   const { t } = useLanguage()
   const [posts, setPosts] = useState<FeedPost[]>(initialPosts)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const [hasMore, setHasMore] = useState(initialPosts.length >= 20)
 
-  const handlePostCreated = (post: FeedPost) => {
+  const handlePostCreated = useCallback((post: FeedPost) => {
     setPosts(prev => [post, ...prev])
-  }
+  }, [])
 
-  const handlePostDeleted = (postId: string) => {
+  const handlePostDeleted = useCallback((postId: string) => {
     setPosts(prev => prev.filter(p => p.id !== postId))
+  }, [])
+
+  const handleLoadMore = async () => {
+    if (loadingMore || !hasMore) return
+    setLoadingMore(true)
+    try {
+      const nextPosts = await getFeedPosts(20, posts.length)
+      if (nextPosts.length < 20) {
+        setHasMore(false)
+      }
+      setPosts(prev => [...prev, ...nextPosts])
+    } catch {
+      // Graceful fallback
+    } finally {
+      setLoadingMore(false)
+    }
   }
 
   return (
@@ -274,6 +308,32 @@ export default function FeedSection({
                 onDelete={handlePostDeleted}
               />
             ))}
+
+            {hasMore && (
+              <div style={{ textAlign: 'center', marginTop: '24px', marginBottom: '24px' }}>
+                <button
+                  type="button"
+                  className="btn btn--secondary"
+                  onClick={handleLoadMore}
+                  disabled={loadingMore}
+                  style={{
+                    width: 'auto',
+                    padding: '9px 24px',
+                    fontSize: '13.5px',
+                    borderRadius: 'var(--radius-full)',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                  }}
+                >
+                  {loadingMore ? (
+                    <span className="spinner spinner--sm" />
+                  ) : (
+                    <span>✨ {t('common.load_more') || 'Daha Fazla Göster'}</span>
+                  )}
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>

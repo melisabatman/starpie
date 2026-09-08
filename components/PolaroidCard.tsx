@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, memo } from 'react'
 import Image from 'next/image'
 import { useLanguage } from '@/components/LanguageProvider'
 import type { Memory } from '@/lib/types'
@@ -24,7 +24,7 @@ function formatMemoryDate(dateStr: string, lang: 'tr' | 'en'): string {
   }
 }
 
-export default function PolaroidCard({
+function PolaroidCard({
   memory,
   currentUserId,
   onDelete,
@@ -57,6 +57,8 @@ export default function PolaroidCard({
               alt={memory.caption || 'Polaroid Anı'}
               width={400}
               height={400}
+              sizes="(max-width: 640px) 90vw, (max-width: 1024px) 45vw, 320px"
+              loading="lazy"
               className="polaroid-img"
               unoptimized={memory.image_url.startsWith('blob:')}
             />
@@ -125,6 +127,7 @@ export default function PolaroidCard({
                   alt={memory.caption || 'Polaroid Memory'}
                   width={800}
                   height={800}
+                  sizes="(max-width: 768px) 100vw, 800px"
                   className="polaroid-img"
                   style={{ objectFit: 'contain', maxHeight: '65vh' }}
                 />
@@ -154,3 +157,5 @@ export default function PolaroidCard({
     </>
   )
 }
+
+export default memo(PolaroidCard)

@@ -238,6 +238,8 @@ export default function AdminBlogFeed({
                       src={post.cover_image_url}
                       alt={post.title}
                       fill
+                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                      loading="lazy"
                       style={{ objectFit: 'cover' }}
                     />
                   </div>
@@ -254,6 +256,8 @@ export default function AdminBlogFeed({
                             alt={author.full_name ?? 'Yazar'}
                             width={32}
                             height={32}
+                            sizes="32px"
+                            loading="lazy"
                             style={{ objectFit: 'cover', borderRadius: '50%' }}
                           />
                         ) : (
@@ -369,6 +373,7 @@ export default function AdminBlogFeed({
                       alt={readingPost.author.full_name ?? 'Yazar'}
                       width={44}
                       height={44}
+                      sizes="44px"
                       style={{ objectFit: 'cover', borderRadius: '50%' }}
                     />
                   ) : (
@@ -393,6 +398,7 @@ export default function AdminBlogFeed({
                     alt={readingPost.title}
                     width={800}
                     height={400}
+                    sizes="(max-width: 768px) 100vw, 800px"
                     style={{ objectFit: 'cover', width: '100%', height: 'auto', borderRadius: '12px' }}
                   />
                 </div>

@@ -234,6 +234,8 @@ export default function AppNavigation() {
                       alt="Avatar"
                       width={30}
                       height={30}
+                      sizes="30px"
+                      priority
                       style={{ objectFit: 'cover', borderRadius: '50%' }}
                     />
                   ) : (
@@ -335,6 +337,7 @@ export default function AppNavigation() {
                     alt="Avatar"
                     width={56}
                     height={56}
+                    sizes="56px"
                     style={{ objectFit: 'cover', borderRadius: '50%' }}
                   />
                 ) : (

@@ -133,6 +133,7 @@ export default function ProfileSetupForm({ userId, existingProfile }: Props) {
                   src={avatarPreview}
                   alt={t('profile.add_photo')}
                   fill
+                  sizes="120px"
                   style={{ objectFit: 'cover' }}
                   unoptimized={avatarPreview.startsWith('blob:')}
                 />

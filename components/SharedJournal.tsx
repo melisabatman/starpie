@@ -248,6 +248,7 @@ export default function SharedJournal({
                 alt="Journal memory"
                 width={500}
                 height={300}
+                sizes="(max-width: 640px) 100vw, 500px"
                 style={{ objectFit: 'cover', width: '100%', maxHeight: '280px', borderRadius: 'var(--radius-md)' }}
                 unoptimized
               />
@@ -355,6 +356,7 @@ export default function SharedJournal({
                           alt="Avatar"
                           width={38}
                           height={38}
+                          sizes="38px"
                           style={{ objectFit: 'cover', borderRadius: '50%' }}
                         />
                       ) : (
@@ -417,6 +419,8 @@ export default function SharedJournal({
                       alt={entry.title || 'Journal Photo'}
                       width={600}
                       height={400}
+                      sizes="(max-width: 640px) 100vw, 600px"
+                      loading="lazy"
                       style={{ objectFit: 'cover', width: '100%', height: 'auto', maxHeight: '420px', borderRadius: 'var(--radius-md)' }}
                     />
                   </div>

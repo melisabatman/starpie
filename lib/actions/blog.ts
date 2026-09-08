@@ -26,13 +26,14 @@ export async function checkIsAdmin(): Promise<boolean> {
 // GET ALL ADMIN BLOG POSTS
 // ────────────────────────────────────────────────────────────
 
-export async function getAdminPosts(): Promise<AdminPost[]> {
+export async function getAdminPosts(limit: number = 30): Promise<AdminPost[]> {
   const supabase = await createClient()
 
   const { data: posts, error } = await supabase
     .from('admin_posts')
     .select('*')
     .order('created_at', { ascending: false })
+    .limit(limit)
 
   if (error || !posts) {
     console.error('Error fetching admin posts:', error)

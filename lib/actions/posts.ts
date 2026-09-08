@@ -55,11 +55,7 @@ export async function createPost(
   return { success: true, post: feedPost }
 }
 
-// ────────────────────────────────────────────────────────────
-// GET FEED POSTS (Own posts + Friends' posts + Friends' reposts)
-// ────────────────────────────────────────────────────────────
-
-export async function getFeedPosts(): Promise<FeedPost[]> {
+export async function getFeedPosts(limit: number = 20, offset: number = 0): Promise<FeedPost[]> {
   const supabase = await createClient()
   const {
     data: { user },
@@ -71,6 +67,7 @@ export async function getFeedPosts(): Promise<FeedPost[]> {
     .from('posts')
     .select('*')
     .order('created_at', { ascending: false })
+    .range(offset, offset + limit - 1)
 
   const posts: Post[] = (postsData as Post[]) || []
 
@@ -81,6 +78,7 @@ export async function getFeedPosts(): Promise<FeedPost[]> {
       .from('post_reposts')
       .select('id, post_id, user_id, created_at')
       .order('created_at', { ascending: false })
+      .range(offset, offset + limit - 1)
     if (rData) repostsData = rData
   } catch {
     // If post_reposts table does not exist yet
@@ -213,14 +211,18 @@ export async function getFeedPosts(): Promise<FeedPost[]> {
       new Date(a.feed_timestamp || a.created_at).getTime()
   )
 
-  return feedItems
+  return feedItems.slice(0, limit)
 }
 
 // ────────────────────────────────────────────────────────────
 // GET PROFILE POSTS (Posts by user + Reposts by user)
 // ────────────────────────────────────────────────────────────
 
-export async function getProfilePosts(targetUserId: string): Promise<FeedPost[]> {
+export async function getProfilePosts(
+  targetUserId: string,
+  limit: number = 20,
+  offset: number = 0
+): Promise<FeedPost[]> {
   const supabase = await createClient()
   const {
     data: { user },
@@ -239,6 +241,7 @@ export async function getProfilePosts(targetUserId: string): Promise<FeedPost[]>
     .select('*')
     .eq('user_id', targetUserId)
     .order('created_at', { ascending: false })
+    .range(offset, offset + limit - 1)
 
   const posts: Post[] = (postsData as Post[]) || []
 
@@ -250,6 +253,7 @@ export async function getProfilePosts(targetUserId: string): Promise<FeedPost[]>
       .select('id, post_id, user_id, created_at')
       .eq('user_id', targetUserId)
       .order('created_at', { ascending: false })
+      .range(offset, offset + limit - 1)
     if (rData) repostsData = rData
   } catch {
     // Table may not exist yet
@@ -394,7 +398,7 @@ export async function getProfilePosts(targetUserId: string): Promise<FeedPost[]>
       new Date(a.feed_timestamp || a.created_at).getTime()
   )
 
-  return feedItems
+  return feedItems.slice(0, limit)
 }
 
 // Backwards compatibility

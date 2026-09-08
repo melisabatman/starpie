@@ -45,22 +45,21 @@ export default function AOSInit() {
       elements.forEach(el => {
         if (observedElements.has(el)) return
         observedElements.add(el)
-
-        const rect = el.getBoundingClientRect()
-        // If element is already in viewport, trigger smoothly
-        if (rect.top < window.innerHeight && rect.bottom > 0) {
-          setTimeout(() => el.classList.add('aos-animate'), 30)
-        } else {
-          observer.observe(el)
-        }
+        observer.observe(el)
       })
     }
 
     attachAOS()
 
-    // MutationObserver to automatically catch newly rendered elements (e.g. tab switches, new posts)
+    // Debounced MutationObserver using requestAnimationFrame to batch DOM mutations
+    // and eliminate forced synchronous layout thrashing
+    let rafId: number | null = null
     const mutationObserver = new MutationObserver(() => {
-      attachAOS()
+      if (rafId !== null) cancelAnimationFrame(rafId)
+      rafId = requestAnimationFrame(() => {
+        attachAOS()
+        rafId = null
+      })
     })
 
     mutationObserver.observe(document.body, {
@@ -69,6 +68,7 @@ export default function AOSInit() {
     })
 
     return () => {
+      if (rafId !== null) cancelAnimationFrame(rafId)
       observer.disconnect()
       mutationObserver.disconnect()
     }

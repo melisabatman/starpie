@@ -3,17 +3,39 @@
 import { useState, useTransition } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
+import dynamic from 'next/dynamic'
 import {
   sendSpaceInvite,
   respondToSpaceInvite,
   type DailyMoodHistory,
 } from '@/lib/actions/space'
 import PolaroidGallery from '@/components/PolaroidGallery'
-import MoodTracker from '@/components/MoodTracker'
-import SharedCalendar from '@/components/SharedCalendar'
-import SharedJournal from '@/components/SharedJournal'
 import { useLanguage } from '@/components/LanguageProvider'
 import type { CoupleSpace, Friend, Memory, MoodEntry, Profile, SharedEvent, JournalEntry } from '@/lib/types'
+
+const MoodTracker = dynamic(() => import('@/components/MoodTracker'), {
+  loading: () => (
+    <div style={{ textAlign: 'center', padding: '40px 0' }}>
+      <span className="spinner spinner--sm" />
+    </div>
+  ),
+})
+
+const SharedCalendar = dynamic(() => import('@/components/SharedCalendar'), {
+  loading: () => (
+    <div style={{ textAlign: 'center', padding: '40px 0' }}>
+      <span className="spinner spinner--sm" />
+    </div>
+  ),
+})
+
+const SharedJournal = dynamic(() => import('@/components/SharedJournal'), {
+  loading: () => (
+    <div style={{ textAlign: 'center', padding: '40px 0' }}>
+      <span className="spinner spinner--sm" />
+    </div>
+  ),
+})
 
 interface SpaceHubProps {
   currentUserId: string
@@ -61,6 +83,7 @@ function MiniAvatar({
           alt={name ?? 'Avatar'}
           width={size}
           height={size}
+          sizes={`${size}px`}
           style={{ objectFit: 'cover', borderRadius: '50%' }}
         />
       ) : (
