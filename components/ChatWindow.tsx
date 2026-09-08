@@ -485,7 +485,7 @@ export default function ChatWindow({
                   )}
 
                   <div className="chat-bubble__meta">
-                    <span className="chat-bubble__time">
+                    <span className="chat-bubble__time" suppressHydrationWarning>
                       {formatTime(msg.created_at, lang, t('messages.yesterday'))}
                     </span>
                     {isMe && (

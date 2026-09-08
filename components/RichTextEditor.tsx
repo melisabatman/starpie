@@ -2,7 +2,6 @@
 
 import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
-import Underline from '@tiptap/extension-underline'
 import Placeholder from '@tiptap/extension-placeholder'
 import { forwardRef, useImperativeHandle, useEffect } from 'react'
 
@@ -54,7 +53,6 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(
           orderedList: false,
           horizontalRule: false,
         }),
-        Underline,
         Placeholder.configure({
           placeholder,
           emptyEditorClass: 'is-editor-empty',

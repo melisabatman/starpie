@@ -3,6 +3,7 @@ import './globals.css'
 import AOSInit from '@/components/AOSInit'
 import AppNavigation from '@/components/AppNavigation'
 import { LanguageProvider } from '@/components/LanguageProvider'
+import { PresenceProvider } from '@/lib/hooks/usePresence'
 
 export const metadata: Metadata = {
   title: 'Starpie — Profilini Paylaş',
@@ -25,9 +26,11 @@ export default function RootLayout({
       </head>
       <body>
         <LanguageProvider>
-          <AOSInit />
-          <AppNavigation />
-          {children}
+          <PresenceProvider>
+            <AOSInit />
+            <AppNavigation />
+            {children}
+          </PresenceProvider>
         </LanguageProvider>
       </body>
     </html>

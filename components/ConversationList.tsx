@@ -197,7 +197,7 @@ export default function ConversationList({
                   <div className="conv-item__content">
                     <div className="conv-item__row">
                       <h4 className="conv-item__name">{friend.full_name ?? 'User'}</h4>
-                      <span className="conv-item__time">
+                      <span className="conv-item__time" suppressHydrationWarning>
                         {formatRelativeTime(last_message?.created_at, lang)}
                       </span>
                     </div>
