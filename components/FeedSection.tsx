@@ -207,116 +207,7 @@ function FeedCreatePostForm({
   )
 }
 
-// ─── Feed Post Card ───────────────────────────────────────────
-function FeedPostCard({
-  post,
-  currentUserId,
-  onDelete,
-}: {
-  post: FeedPost
-  currentUserId: string
-  onDelete: (id: string) => void
-}) {
-  const { t, lang } = useLanguage()
-  const [isPending, startTransition] = useTransition()
-  const isOwner = post.user_id === currentUserId
-  const author = post.author
-
-  const handleDelete = () => {
-    if (!confirm(t('feed.delete_confirm'))) return
-    startTransition(async () => {
-      const res = await deletePost(post.id)
-      if (res.success) onDelete(post.id)
-    })
-  }
-
-  const initials = author?.full_name
-    ? author.full_name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
-    : '?'
-
-  const formattedDate = new Intl.DateTimeFormat(lang === 'tr' ? 'tr-TR' : 'en-US', {
-    day: 'numeric',
-    month: 'short',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(new Date(post.created_at))
-
-  return (
-    <article className="post-card" data-aos="fade-up">
-      {/* Header */}
-      <div className="post-card__header">
-        <Link
-          href={`/profile/${post.user_id}`}
-          style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '10px' }}
-        >
-          <div className="mini-avatar" style={{ width: 42, height: 42, minWidth: 42, fontSize: 15 }}>
-            {author?.avatar_url ? (
-              <Image
-                src={author.avatar_url}
-                alt={author.full_name ?? 'Avatar'}
-                width={42}
-                height={42}
-                style={{ objectFit: 'cover', width: '100%', height: '100%', borderRadius: '50%' }}
-              />
-            ) : (
-              <span>{initials}</span>
-            )}
-          </div>
-
-          <div className="post-card__meta">
-            <span className="post-card__author" style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
-              {author?.full_name ?? 'Unknown'}
-              {author?.role === 'admin' && (
-                <span className="blog-admin-pill" style={{ padding: '1px 6px', fontSize: '10px' }}>{t('nav.admin_badge')}</span>
-              )}
-            </span>
-            {author?.profession && (
-              <span className="post-card__profession">{author.profession}</span>
-            )}
-            <time className="post-card__date">{formattedDate}</time>
-          </div>
-        </Link>
-
-        {isOwner && (
-          <button
-            className="post-delete-btn"
-            onClick={handleDelete}
-            disabled={isPending}
-            title={t('feed.delete_btn')}
-            aria-label={t('feed.delete_btn')}
-          >
-            {isPending ? (
-              <span className="spinner spinner--sm" />
-            ) : (
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="3 6 5 6 21 6"/>
-                <path d="M19 6l-1 14H6L5 6"/>
-                <path d="M10 11v6"/><path d="M14 11v6"/>
-                <path d="M9 6V4h6v2"/>
-              </svg>
-            )}
-          </button>
-        )}
-      </div>
-
-      {/* Content */}
-      <p className="post-card__content">{post.content}</p>
-
-      {/* Image */}
-      {post.image_url && (
-        <div className="post-card__image">
-          <Image
-            src={post.image_url}
-            alt="Post Image"
-            width={600}
-            height={400}
-            style={{ objectFit: 'cover', width: '100%', height: 'auto', maxHeight: 380 }}
-          />
-        </div>
-      )}
-    </article>
-  )
-}
+import PostCard from '@/components/PostCard'
 
 // ─── Main FeedSection Component ───────────────────────────────
 export default function FeedSection({
@@ -370,10 +261,11 @@ export default function FeedSection({
         ) : (
           <div className="post-list">
             {posts.map(post => (
-              <FeedPostCard
-                key={post.id}
+              <PostCard
+                key={post.repost ? `${post.id}-repost-${post.repost.id}` : post.id}
                 post={post}
                 currentUserId={currentUserId}
+                currentUserProfile={currentUserProfile}
                 onDelete={handlePostDeleted}
               />
             ))}

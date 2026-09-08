@@ -1,11 +1,12 @@
 'use client'
 
-import { useState, useRef, useTransition } from 'react'
+import { useState, useRef } from 'react'
 import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
-import { createPost, deletePost } from '@/lib/actions/posts'
+import { createPost } from '@/lib/actions/posts'
 import { useLanguage } from '@/components/LanguageProvider'
-import type { Post } from '@/lib/types'
+import PostCard from '@/components/PostCard'
+import type { FeedPost, Profile } from '@/lib/types'
 
 // ─── Shared profile info for post cards ──────────────────────
 export interface PostProfile {
@@ -21,7 +22,7 @@ function CreatePostForm({
   onPostCreated,
 }: {
   profileId: string
-  onPostCreated: (post: Post) => void
+  onPostCreated: (post: FeedPost) => void
 }) {
   const { t } = useLanguage()
   const [content, setContent] = useState('')
@@ -174,123 +175,26 @@ function CreatePostForm({
   )
 }
 
-// ─── Single Post Card ─────────────────────────────────────────
-function PostCard({
-  post,
-  profile,
-  isOwnProfile,
-  onDelete,
-}: {
-  post: Post
-  profile: PostProfile
-  isOwnProfile: boolean
-  onDelete: (id: string) => void
-}) {
-  const { t, lang } = useLanguage()
-  const [isPending, startTransition] = useTransition()
-
-  const handleDelete = () => {
-    if (!confirm(t('feed.delete_confirm'))) return
-    startTransition(async () => {
-      const res = await deletePost(post.id)
-      if (res.success) onDelete(post.id)
-    })
-  }
-
-  const initials = profile.full_name
-    ? profile.full_name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
-    : '?'
-
-  const formattedDate = new Intl.DateTimeFormat(lang === 'tr' ? 'tr-TR' : 'en-US', {
-    day: 'numeric',
-    month: 'short',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(new Date(post.created_at))
-
-  return (
-    <article className="post-card" data-aos="fade-up">
-      {/* Header */}
-      <div className="post-card__header">
-        <div className="mini-avatar" style={{ width: 42, height: 42, minWidth: 42, fontSize: 15 }}>
-          {profile.avatar_url ? (
-            <Image
-              src={profile.avatar_url}
-              alt={profile.full_name ?? 'Avatar'}
-              width={42}
-              height={42}
-              style={{ objectFit: 'cover', width: '100%', height: '100%', borderRadius: '50%' }}
-            />
-          ) : (
-            <span>{initials}</span>
-          )}
-        </div>
-
-        <div className="post-card__meta">
-          <span className="post-card__author">{profile.full_name ?? 'Unknown'}</span>
-          {profile.profession && (
-            <span className="post-card__profession">{profile.profession}</span>
-          )}
-          <time className="post-card__date">{formattedDate}</time>
-        </div>
-
-        {isOwnProfile && (
-          <button
-            className="post-delete-btn"
-            onClick={handleDelete}
-            disabled={isPending}
-            title={t('feed.delete_btn')}
-            aria-label={t('feed.delete_btn')}
-          >
-            {isPending ? (
-              <span className="spinner spinner--sm" />
-            ) : (
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="3 6 5 6 21 6"/>
-                <path d="M19 6l-1 14H6L5 6"/>
-                <path d="M10 11v6"/><path d="M14 11v6"/>
-                <path d="M9 6V4h6v2"/>
-              </svg>
-            )}
-          </button>
-        )}
-      </div>
-
-      {/* Content */}
-      <p className="post-card__content">{post.content}</p>
-
-      {/* Image */}
-      {post.image_url && (
-        <div className="post-card__image">
-          <Image
-            src={post.image_url}
-            alt="Post Image"
-            width={600}
-            height={400}
-            style={{ objectFit: 'cover', width: '100%', height: 'auto', maxHeight: 380 }}
-          />
-        </div>
-      )}
-    </article>
-  )
-}
-
 // ─── Main PostsSection ────────────────────────────────────────
 interface PostsSectionProps {
   isOwnProfile: boolean
-  initialPosts: Post[]
+  initialPosts: FeedPost[]
   profile: PostProfile
+  currentUserId: string
+  currentUserProfile?: Profile | null
 }
 
 export default function PostsSection({
   isOwnProfile,
   initialPosts,
   profile,
+  currentUserId,
+  currentUserProfile,
 }: PostsSectionProps) {
   const { t } = useLanguage()
-  const [posts, setPosts] = useState<Post[]>(initialPosts)
+  const [posts, setPosts] = useState<FeedPost[]>(initialPosts)
 
-  const handlePostCreated = (post: Post) => {
+  const handlePostCreated = (post: FeedPost) => {
     setPosts(prev => [post, ...prev])
   }
 
@@ -303,7 +207,7 @@ export default function PostsSection({
       {/* Section Header */}
       <div className="posts-section__header">
         <h2 className="posts-section__title">
-          {isOwnProfile ? t('profile.posts') : t('profile.posts')}
+          {t('profile.posts')}
           {posts.length > 0 && (
             <span className="tab-count">{posts.length}</span>
           )}
@@ -329,10 +233,10 @@ export default function PostsSection({
         <div className="post-list">
           {posts.map(post => (
             <PostCard
-              key={post.id}
+              key={post.repost ? `${post.id}-repost-${post.repost.id}` : post.id}
               post={post}
-              profile={profile}
-              isOwnProfile={isOwnProfile}
+              currentUserId={currentUserId}
+              currentUserProfile={currentUserProfile}
               onDelete={handlePostDeleted}
             />
           ))}

@@ -16,8 +16,29 @@ export type Post = {
   created_at: string
 }
 
+export type PostComment = {
+  id: string
+  post_id: string
+  user_id: string
+  content: string
+  created_at: string
+  author?: Pick<Profile, 'id' | 'full_name' | 'profession' | 'avatar_url' | 'role'> | null
+}
+
 export type FeedPost = Post & {
   author?: Pick<Profile, 'id' | 'full_name' | 'profession' | 'avatar_url' | 'role'> | null
+  likes_count: number
+  has_liked: boolean
+  comments_count: number
+  reposts_count: number
+  has_reposted: boolean
+  feed_timestamp?: string
+  repost?: {
+    id: string
+    user_id: string
+    created_at: string
+    reposter: Pick<Profile, 'id' | 'full_name' | 'avatar_url'> | null
+  } | null
 }
 
 

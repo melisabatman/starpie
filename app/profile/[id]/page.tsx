@@ -7,7 +7,8 @@ import PostsSection from '@/components/PostsSection'
 import ProfileCardView, { ProfileLockedNotice, ProfileFooterNotice } from '@/components/ProfileCardView'
 import PageHeader from '@/components/PageHeader'
 import { getFriends, checkFriendship } from '@/lib/actions/friends'
-import type { Profile, Post } from '@/lib/types'
+import { getProfilePosts } from '@/lib/actions/posts'
+import type { Profile, FeedPost } from '@/lib/types'
 
 interface Props {
   params: Promise<{ id: string }>
@@ -64,16 +65,19 @@ export default async function ProfilePage({ params }: Props) {
     isOwnProfile ? Promise.resolve(true) : checkFriendship(id),
   ])
 
-  // Fetch posts only if allowed (own profile or friend)
-  let posts: Post[] = []
-  if (isFriendsWith) {
-    const { data } = await supabase
-      .from('posts')
+  // Fetch current user profile if looking at another profile
+  let currentUserProfile = profile
+  if (!isOwnProfile) {
+    const { data: cProfile } = await supabase
+      .from('profiles')
       .select('*')
-      .eq('user_id', id)
-      .order('created_at', { ascending: false })
-    posts = (data as Post[]) ?? []
+      .eq('id', user.id)
+      .single<Profile>()
+    if (cProfile) currentUserProfile = cProfile
   }
+
+  // Fetch posts only if allowed (own profile or friend)
+  const posts: FeedPost[] = isFriendsWith ? await getProfilePosts(id) : []
 
   return (
     <div className="profile-page">
@@ -142,6 +146,8 @@ export default async function ProfilePage({ params }: Props) {
                 avatar_url: profile.avatar_url,
                 profession: profile.profession,
               }}
+              currentUserId={user.id}
+              currentUserProfile={currentUserProfile}
             />
           ) : (
             <ProfileLockedNotice />
