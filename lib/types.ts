@@ -214,4 +214,11 @@ export type JournalEntry = {
   author?: Pick<Profile, 'id' | 'full_name' | 'profession' | 'avatar_url'> | null
 }
 
-
+export type TimelinePost = {
+  id: string
+  wall_user_id: string
+  author_id: string
+  content: string
+  created_at: string
+  author?: Pick<Profile, 'id' | 'full_name' | 'profession' | 'avatar_url' | 'role'> | null
+}

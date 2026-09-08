@@ -132,8 +132,21 @@ export const translations = {
     'profile.no_bio': 'Henüz biyografi eklemedin.',
     'profile.posts_locked_title': 'Gönderiler Gizli',
     'profile.posts_locked_sub': 'Bu kullanıcının gönderileri sadece arkadaşlarına görünür.',
-    'profile.find_friends_btn': 'Arkadaş Bul →',
     'profile.footer_tagline': '✨ starpie ile profilini dünyayla paylaş',
+
+    // Timeline / Wall
+    'timeline.tab': 'Zaman Tüneli',
+    'timeline.title': 'Zaman Tüneli 🕊️',
+    'timeline.write_placeholder_self': 'Kendi zaman tüneline bir şeyler karala...',
+    'timeline.write_placeholder_friend': '{name} adlı arkadaşının zaman tüneline yaz...',
+    'timeline.post_btn': 'Yazı Bırak ✨',
+    'timeline.posting': 'Paylaşılıyor...',
+    'timeline.empty_title': 'Zaman Tüneli Henüz Boş',
+    'timeline.empty_sub_self': 'Zaman tüneline henüz kimse bir şey yazmamış. Arkadaşların buraya sana özel mesajlar bırakabilir!',
+    'timeline.empty_sub_friend': '{name} adlı arkadaşının tüneline henüz kimse yazmamış. İlk güzel notu sen bırak!',
+    'timeline.delete_confirm': 'Bu tünel mesajını silmek istediğinden emin misin?',
+    'timeline.delete_btn': 'Mesajı Sil',
+    'timeline.friends_only_notice': 'Zaman tüneli yalnızca arkadaşlara özeldir.',
 
     // Friends
     'friends.title': 'Arkadaşlar 👥',
@@ -540,8 +553,21 @@ export const translations = {
     'profile.no_bio': 'No biography added yet.',
     'profile.posts_locked_title': 'Posts Are Private',
     'profile.posts_locked_sub': 'This user\'s posts are only visible to their friends.',
-    'profile.find_friends_btn': 'Find Friends →',
     'profile.footer_tagline': '✨ share your profile with the world on starpie',
+
+    // Timeline / Wall
+    'timeline.tab': 'Timeline',
+    'timeline.title': 'Timeline Wall 🕊️',
+    'timeline.write_placeholder_self': 'Write something on your timeline...',
+    'timeline.write_placeholder_friend': 'Write on {name}\'s timeline...',
+    'timeline.post_btn': 'Post Note ✨',
+    'timeline.posting': 'Posting...',
+    'timeline.empty_title': 'Timeline Is Quiet',
+    'timeline.empty_sub_self': 'No one has posted on your timeline yet. Your friends can leave sweet notes here!',
+    'timeline.empty_sub_friend': 'No one has written on {name}\'s timeline yet. Be the first to leave a sweet note!',
+    'timeline.delete_confirm': 'Are you sure you want to delete this timeline note?',
+    'timeline.delete_btn': 'Delete Note',
+    'timeline.friends_only_notice': 'Timeline wall is only accessible to friends.',
 
     // Friends
     'friends.title': 'Friends 👥',

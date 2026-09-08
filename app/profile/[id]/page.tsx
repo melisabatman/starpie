@@ -3,12 +3,13 @@ import Image from 'next/image'
 import Link from 'next/link'
 import type { Metadata } from 'next'
 import { createClient } from '@/lib/supabase/server'
-import PostsSection from '@/components/PostsSection'
-import ProfileCardView, { ProfileLockedNotice, ProfileFooterNotice } from '@/components/ProfileCardView'
+import ProfileCardView, { ProfileFooterNotice } from '@/components/ProfileCardView'
+import ProfileContentTabs from '@/components/ProfileContentTabs'
 import PageHeader from '@/components/PageHeader'
 import { getFriends, checkFriendship } from '@/lib/actions/friends'
 import { getProfilePosts } from '@/lib/actions/posts'
-import type { Profile, FeedPost } from '@/lib/types'
+import { getTimelinePosts } from '@/lib/actions/timeline'
+import type { Profile, FeedPost, TimelinePost } from '@/lib/types'
 
 interface Props {
   params: Promise<{ id: string }>
@@ -76,8 +77,10 @@ export default async function ProfilePage({ params }: Props) {
     if (cProfile) currentUserProfile = cProfile
   }
 
-  // Fetch posts only if allowed (own profile or friend)
-  const posts: FeedPost[] = isFriendsWith ? await getProfilePosts(id) : []
+  // Fetch posts and timeline messages only if allowed (own profile or friend)
+  const [posts, timelinePosts]: [FeedPost[], TimelinePost[]] = isFriendsWith
+    ? await Promise.all([getProfilePosts(id), getTimelinePosts(id)])
+    : [[], []]
 
   return (
     <div className="profile-page">
@@ -134,24 +137,17 @@ export default async function ProfilePage({ params }: Props) {
           />
         </div>
 
-        {/* ── Posts Section ── */}
+        {/* ── Posts & Timeline Section ── */}
         <div style={{ marginTop: '24px' }} data-aos="fade-up" data-aos-delay="100">
-          {isFriendsWith ? (
-            <PostsSection
-              isOwnProfile={isOwnProfile}
-              initialPosts={posts}
-              profile={{
-                id: profile.id,
-                full_name: profile.full_name,
-                avatar_url: profile.avatar_url,
-                profession: profile.profession,
-              }}
-              currentUserId={user.id}
-              currentUserProfile={currentUserProfile}
-            />
-          ) : (
-            <ProfileLockedNotice />
-          )}
+          <ProfileContentTabs
+            isOwnProfile={isOwnProfile}
+            isFriendsWith={isFriendsWith}
+            profile={profile}
+            currentUserId={user.id}
+            currentUserProfile={currentUserProfile}
+            initialPosts={posts}
+            initialTimelinePosts={timelinePosts}
+          />
         </div>
 
         {/* Dynamic Footer */}
