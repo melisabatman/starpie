@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
 import { createMemory, deleteMemory } from '@/lib/actions/space'
@@ -21,6 +21,11 @@ export default function PolaroidGallery({
 }: PolaroidGalleryProps) {
   const { t } = useLanguage()
   const [memories, setMemories] = useState<Memory[]>(initialMemories)
+
+  // Wipe and sync memories whenever spaceId or initialMemories change
+  useEffect(() => {
+    setMemories(initialMemories)
+  }, [spaceId, initialMemories])
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [file, setFile] = useState<File | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)

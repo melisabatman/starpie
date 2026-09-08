@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { setMood, type DailyMoodHistory } from '@/lib/actions/space'
@@ -75,7 +75,7 @@ export default function MoodTracker({
 }: MoodTrackerProps) {
   const { t, lang } = useLanguage()
   const [myMood, setMyMood] = useState<MoodEntry | null>(initialTodayMoods.myMood)
-  const [partnerMood] = useState<MoodEntry | null>(initialTodayMoods.partnerMood)
+  const [partnerMood, setPartnerMood] = useState<MoodEntry | null>(initialTodayMoods.partnerMood)
   const [pastMoods, setPastMoods] = useState<DailyMoodHistory[]>(initialPastMoods)
 
   const moodOptions = useMemo(() => {
@@ -93,6 +93,17 @@ export default function MoodTracker({
     initialTodayMoods.myMood?.mood_label || t('mood.opt_happy')
   )
   const [note, setNote] = useState(initialTodayMoods.myMood?.note || '')
+
+  // Wipe and sync mood state whenever spaceId or initial moods change
+  useEffect(() => {
+    setMyMood(initialTodayMoods.myMood)
+    setPartnerMood(initialTodayMoods.partnerMood)
+    setPastMoods(initialPastMoods)
+    setIsPickerOpen(!initialTodayMoods.myMood)
+    setSelectedEmoji(initialTodayMoods.myMood?.emoji || '😊')
+    setSelectedLabel(initialTodayMoods.myMood?.mood_label || t('mood.opt_happy'))
+    setNote(initialTodayMoods.myMood?.note || '')
+  }, [spaceId, initialTodayMoods, initialPastMoods, t])
   const [isSaving, setIsSaving] = useState(false)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
 

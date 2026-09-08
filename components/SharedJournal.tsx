@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useTransition } from 'react'
+import { useState, useRef, useTransition, useEffect } from 'react'
 import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
 import { createJournalEntry, deleteJournalEntry } from '@/lib/actions/space'
@@ -58,6 +58,16 @@ export default function SharedJournal({
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [deletingId, setDeletingId] = useState<string | null>(null)
+
+  useEffect(() => {
+    setEntries(initialEntries)
+    setIsWriting(false)
+    setTitle('')
+    setContent('')
+    setImageFile(null)
+    setImagePreview(null)
+    setErrorMsg(null)
+  }, [spaceId, initialEntries])
   const [isPending, startTransition] = useTransition()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const supabase = createClient()

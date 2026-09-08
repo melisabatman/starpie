@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition, useMemo } from 'react'
+import { useState, useTransition, useMemo, useEffect } from 'react'
 import Image from 'next/image'
 import { createSharedEvent, deleteSharedEvent } from '@/lib/actions/space'
 import { useLanguage } from '@/components/LanguageProvider'
@@ -64,6 +64,11 @@ export default function SharedCalendar({
 
   // Local events state for immediate optimistic updates
   const [events, setEvents] = useState<SharedEvent[]>(initialEvents)
+
+  // Wipe and sync events whenever spaceId or initialEvents change
+  useEffect(() => {
+    setEvents(initialEvents)
+  }, [spaceId, initialEvents])
 
   // Modal state
   const [isModalOpen, setIsModalOpen] = useState(false)

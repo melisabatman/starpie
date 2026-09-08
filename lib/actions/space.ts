@@ -10,15 +10,19 @@ import type { CoupleSpace, Memory, MoodEntry, Profile, SharedEvent, JournalEntry
 // GET ACTIVE SPACE & PENDING INVITATIONS
 // ────────────────────────────────────────────────────────────
 
-export async function getActiveSpace(): Promise<{
+export async function getActiveSpace(
+  targetPartnerOrSpaceId?: string | null,
+  forceNew?: boolean
+): Promise<{
   activeSpace: CoupleSpace | null
+  allActiveSpaces: CoupleSpace[]
   pendingInvitesReceived: CoupleSpace[]
   pendingInvitesSent: CoupleSpace[]
 }> {
   const user = await getCachedUser()
 
   if (!user) {
-    return { activeSpace: null, pendingInvitesReceived: [], pendingInvitesSent: [] }
+    return { activeSpace: null, allActiveSpaces: [], pendingInvitesReceived: [], pendingInvitesSent: [] }
   }
 
   const supabase = await createClient()
@@ -31,7 +35,7 @@ export async function getActiveSpace(): Promise<{
     .order('created_at', { ascending: false })
 
   if (error || !spaces || spaces.length === 0) {
-    return { activeSpace: null, pendingInvitesReceived: [], pendingInvitesSent: [] }
+    return { activeSpace: null, allActiveSpaces: [], pendingInvitesReceived: [], pendingInvitesSent: [] }
   }
 
   // Get partner IDs
@@ -54,7 +58,7 @@ export async function getActiveSpace(): Promise<{
     }
   })
 
-  const activeSpace = enrichedSpaces.find(s => s.status === 'accepted') ?? null
+  const allActiveSpaces = enrichedSpaces.filter(s => s.status === 'accepted')
   const pendingInvitesReceived = enrichedSpaces.filter(
     s => s.status === 'pending' && s.user2_id === user.id
   )
@@ -62,7 +66,26 @@ export async function getActiveSpace(): Promise<{
     s => s.status === 'pending' && s.user1_id === user.id
   )
 
-  return { activeSpace, pendingInvitesReceived, pendingInvitesSent }
+  let activeSpace: CoupleSpace | null = null
+
+  if (!forceNew) {
+    if (targetPartnerOrSpaceId) {
+      // Find matching space by space ID or partner ID
+      activeSpace =
+        allActiveSpaces.find(
+          s =>
+            s.id === targetPartnerOrSpaceId ||
+            s.partner?.id === targetPartnerOrSpaceId ||
+            s.user1_id === targetPartnerOrSpaceId ||
+            s.user2_id === targetPartnerOrSpaceId
+        ) ?? null
+    } else {
+      // Default to the first (most recent) active space
+      activeSpace = allActiveSpaces[0] ?? null
+    }
+  }
+
+  return { activeSpace, allActiveSpaces, pendingInvitesReceived, pendingInvitesSent }
 }
 
 // ────────────────────────────────────────────────────────────

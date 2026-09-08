@@ -12,14 +12,21 @@ export const metadata: Metadata = {
   description: 'Arkadaşınla sadece ikinizin görebildiği ortak takvim, anı defteri ve ruh hali alanı.',
 }
 
-export default async function SpacePage() {
+interface Props {
+  searchParams?: Promise<{ partnerId?: string; spaceId?: string; id?: string; new?: string }>
+}
+
+export default async function SpacePage({ searchParams }: Props) {
+  const params = (await searchParams) || {}
+  const targetId = params.partnerId || params.spaceId || params.id || null
+  const forceNew = params.new === 'true'
   const user = await getCachedUser()
 
   if (!user) redirect('/')
 
   // Run profile, space, and friends fetches in parallel
-  const [profile, { activeSpace, pendingInvitesReceived, pendingInvitesSent }, friends] =
-    await Promise.all([getCachedCurrentProfile(), getActiveSpace(), getFriends()])
+  const [profile, { activeSpace, allActiveSpaces, pendingInvitesReceived, pendingInvitesSent }, friends] =
+    await Promise.all([getCachedCurrentProfile(), getActiveSpace(targetId, forceNew), getFriends()])
 
   if (!profile) redirect('/profile/setup')
 
@@ -50,9 +57,12 @@ export default async function SpacePage() {
       {/* Body */}
       <div className="profile-body">
         <SpaceHub
+          key={activeSpace?.id || (forceNew ? 'new-space' : 'no-space')}
           currentUserId={user.id}
           currentUserProfile={profile}
           activeSpace={activeSpace}
+          allActiveSpaces={allActiveSpaces}
+          targetPartnerId={params.partnerId || null}
           pendingInvitesReceived={pendingInvitesReceived}
           pendingInvitesSent={pendingInvitesSent}
           friends={friends}

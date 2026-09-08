@@ -3174,6 +3174,97 @@ body {
   animation: fadeIn 0.4s ease-out;
 }
 
+/* ── Space Switcher Bar ── */
+.space-switcher-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 24px;
+  padding: 10px 16px;
+  background: rgba(255, 255, 255, 0.85);
+  border-radius: var(--radius-lg, 16px);
+  border: 1px solid var(--pink-100);
+  backdrop-filter: blur(10px);
+}
+
+[data-theme="dark"] .space-switcher-bar {
+  background: rgba(29, 21, 37, 0.85);
+  border-color: #382444;
+}
+
+.space-switcher-label {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--pink-700);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.space-switcher-list {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.space-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 9999px;
+  font-size: 13px;
+  font-weight: 600;
+  background: white;
+  color: var(--gray-700);
+  border: 1.5px solid var(--pink-200);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  text-decoration: none;
+}
+
+[data-theme="dark"] .space-chip {
+  background: #140d1b;
+  color: #e2d9eb;
+  border-color: #382444;
+}
+
+.space-chip:hover {
+  background: var(--pink-50);
+  border-color: var(--pink-400);
+  color: var(--pink-700);
+  transform: translateY(-1px);
+}
+
+[data-theme="dark"] .space-chip:hover {
+  background: #251630;
+  color: #ffb6c1;
+}
+
+.space-chip--active {
+  background: linear-gradient(135deg, var(--pink-500), var(--pink-600)) !important;
+  color: white !important;
+  border-color: transparent !important;
+  box-shadow: 0 4px 12px rgba(244, 114, 182, 0.35);
+}
+
+.space-chip--new {
+  border-style: dashed;
+  color: var(--pink-600);
+  background: rgba(255, 182, 193, 0.12);
+}
+
+.space-chip--new:hover {
+  background: var(--pink-100);
+  color: var(--pink-800);
+}
+
+.space-chip-current-badge {
+  font-size: 11px;
+  font-weight: 800;
+  margin-left: 2px;
+}
+
 .space-banner {
   background: linear-gradient(135deg, #ffffff 0%, #fdf2f8 100%);
   border-radius: var(--radius-xl);

@@ -108,8 +108,9 @@ export default function ProfileCardView({
             </Link>
 
             <Link
-              href="/space"
+              href={`/space?partnerId=${profile.id}`}
               id="friend-space-btn"
+              prefetch={true}
               className="btn btn--secondary"
               style={{ display: 'inline-flex', flex: 1, justifyContent: 'center' }}
             >

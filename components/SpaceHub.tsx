@@ -41,6 +41,8 @@ interface SpaceHubProps {
   currentUserId: string
   currentUserProfile: Profile
   activeSpace: CoupleSpace | null
+  allActiveSpaces?: CoupleSpace[]
+  targetPartnerId?: string | null
   pendingInvitesReceived: CoupleSpace[]
   pendingInvitesSent: CoupleSpace[]
   friends: Friend[]
@@ -109,6 +111,8 @@ export default function SpaceHub({
   currentUserId,
   currentUserProfile,
   activeSpace,
+  allActiveSpaces = [],
+  targetPartnerId = null,
   pendingInvitesReceived: initialReceived,
   pendingInvitesSent: initialSent,
   friends,
@@ -118,7 +122,7 @@ export default function SpaceHub({
   initialEvents,
   initialJournalEntries,
 }: SpaceHubProps) {
-  const { t } = useLanguage()
+  const { t, lang } = useLanguage()
   const [pendingReceived, setPendingReceived] = useState(initialReceived)
   const [pendingSent, setPendingSent] = useState(initialSent)
   const [isPending, startTransition] = useTransition()
@@ -166,6 +170,40 @@ export default function SpaceHub({
 
     return (
       <div className="space-active-view">
+        {/* Space Switcher Bar: Switch between different friends' spaces */}
+        {allActiveSpaces && allActiveSpaces.length > 0 && (
+          <div className="space-switcher-bar">
+            <span className="space-switcher-label">
+              💖 {lang === 'tr' ? 'Ortak Alanlar' : 'Partner Spaces'}:
+            </span>
+            <div className="space-switcher-list">
+              {allActiveSpaces.map(s => {
+                const isCurrent = s.id === activeSpace.id
+                const partnerFirstName = s.partner?.full_name?.split(' ')[0] ?? t('mood.partner')
+                return (
+                  <Link
+                    key={s.id}
+                    href={`/space?spaceId=${s.id}`}
+                    prefetch={true}
+                    className={`space-chip ${isCurrent ? 'space-chip--active' : ''}`}
+                  >
+                    <span>{partnerFirstName}</span>
+                    {isCurrent && <span className="space-chip-current-badge">✓</span>}
+                  </Link>
+                )
+              })}
+              <Link
+                href="/space?new=true"
+                prefetch={true}
+                className="space-chip space-chip--new"
+                title={lang === 'tr' ? 'Başka bir arkadaşınla yeni alan kur' : 'Create space with another friend'}
+              >
+                <span>+ {lang === 'tr' ? 'Yeni Alan' : 'New Space'}</span>
+              </Link>
+            </div>
+          </div>
+        )}
+
         {/* Partner Connection Banner */}
         <div className="space-banner" data-aos="fade-up">
           <div className="space-avatars-joint">
@@ -326,6 +364,30 @@ export default function SpaceHub({
   // ════════════════════════════════════════════════════════════
   return (
     <div className="space-setup-view">
+      {/* If user has existing active spaces, offer switcher to go back */}
+      {allActiveSpaces && allActiveSpaces.length > 0 && (
+        <div className="space-switcher-bar">
+          <span className="space-switcher-label">
+            💖 {lang === 'tr' ? 'Mevcut Alanlarım' : 'Active Spaces'}:
+          </span>
+          <div className="space-switcher-list">
+            {allActiveSpaces.map(s => {
+              const partnerFirstName = s.partner?.full_name?.split(' ')[0] ?? t('mood.partner')
+              return (
+                <Link
+                  key={s.id}
+                  href={`/space?spaceId=${s.id}`}
+                  prefetch={true}
+                  className="space-chip"
+                >
+                  <span>{partnerFirstName}</span>
+                </Link>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
       {/* Intro Card */}
       <div className="space-intro-card" data-aos="fade-up">
         <div className="space-intro-icon">💖</div>
@@ -447,26 +509,53 @@ export default function SpaceHub({
           </div>
         ) : (
           <div className="space-friends-grid">
-            {friends.map(({ friend }) => {
-              if (!friend) return null
-              const isSent = pendingSent.some(s => s.partner?.id === friend.id)
-              const isReceived = pendingReceived.some(s => s.partner?.id === friend.id)
+            {/* Sort friends to put targetPartnerId at top if present */}
+            {[...friends]
+              .sort((a, b) => {
+                if (a.friend?.id === targetPartnerId) return -1
+                if (b.friend?.id === targetPartnerId) return 1
+                return 0
+              })
+              .map(({ friend }) => {
+                if (!friend) return null
+                const isTarget = friend.id === targetPartnerId
+                const isSent = pendingSent.some(s => s.partner?.id === friend.id)
+                const isReceived = pendingReceived.some(s => s.partner?.id === friend.id)
 
-              return (
-                <div key={friend.id} className="space-friend-item">
-                  <div className="space-friend-info">
-                    <MiniAvatar
-                      avatarUrl={friend.avatar_url}
-                      name={friend.full_name}
-                      size={44}
-                    />
-                    <div>
-                      <h4 className="space-friend-name">{friend.full_name ?? t('profile.nameless')}</h4>
-                      {friend.profession && (
-                        <p className="space-friend-sub">{friend.profession}</p>
-                      )}
+                return (
+                  <div
+                    key={friend.id}
+                    className="space-friend-item"
+                    style={
+                      isTarget
+                        ? {
+                            borderColor: 'var(--pink-500)',
+                            boxShadow: '0 0 0 2px rgba(244, 114, 182, 0.4)',
+                            background: 'rgba(255, 240, 245, 0.8)',
+                          }
+                        : undefined
+                    }
+                  >
+                    <div className="space-friend-info">
+                      <MiniAvatar
+                        avatarUrl={friend.avatar_url}
+                        name={friend.full_name}
+                        size={44}
+                      />
+                      <div>
+                        <h4 className="space-friend-name">
+                          {friend.full_name ?? t('profile.nameless')}
+                          {isTarget && (
+                            <span style={{ fontSize: '11px', color: 'var(--pink-600)', marginLeft: '6px', fontWeight: 600 }}>
+                              ✦ {lang === 'tr' ? 'Seçilen' : 'Selected'}
+                            </span>
+                          )}
+                        </h4>
+                        {friend.profession && (
+                          <p className="space-friend-sub">{friend.profession}</p>
+                        )}
+                      </div>
                     </div>
-                  </div>
 
                   {isSent ? (
                     <span className="space-badge-pending">{t('friends.request_sent')}</span>
