@@ -18,11 +18,19 @@ export async function getTimelinePosts(
 
   if (!user) return []
 
-  // Privacy check: only wall owner or accepted friends can view
+  // Privacy check: only wall owner, accepted friends, or admins can view
   const isSelf = user.id === wallUserId
   if (!isSelf) {
     const isFriend = await checkFriendship(wallUserId)
-    if (!isFriend) return []
+    if (!isFriend) {
+      const supabase = await createClient()
+      const { data: callerProfile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single()
+      if (callerProfile?.role !== 'admin') return []
+    }
   }
 
   // 1. Fetch timeline posts
@@ -34,8 +42,13 @@ export async function getTimelinePosts(
     .order('created_at', { ascending: false })
     .limit(limit)
 
+  if (error) {
+    console.error('Error fetching timeline posts:', error)
+    return []
+  }
+
   const posts = (postsData as TimelinePost[]) || []
-  if (error || posts.length === 0) {
+  if (posts.length === 0) {
     return []
   }
 
@@ -142,6 +155,7 @@ export async function createTimelinePost(
   }
 
   revalidatePath(`/profile/${wallUserId}`)
+  revalidatePath(`/profile/${user.id}`)
   return { success: true, post: timelinePost }
 }
 

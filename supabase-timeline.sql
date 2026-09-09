@@ -23,7 +23,8 @@ alter table public.timeline_posts enable row level security;
 
 -- ─────────────────────────────────────────────
 -- 2. GÖRÜNTÜLEME (SELECT) POLİTİKASI
--- Sadece profil sahibi, yazar veya kabul edilmiş arkadaşlar görebilir
+-- HEM profilin sahibi HEM DE o sahiple arkadaş olan (friendships tablosunda status='accepted' olan)
+-- herkes ve mesajı yazan yazar tarafından görülebilir.
 -- ─────────────────────────────────────────────
 drop policy if exists "Users and friends can view timeline posts" on public.timeline_posts;
 create policy "Users and friends can view timeline posts"
@@ -43,11 +44,13 @@ create policy "Users and friends can view timeline posts"
           (f.receiver_id = auth.uid() and f.sender_id = timeline_posts.wall_user_id)
         )
     )
+    -- Adminler tüm duvar yazılarını görebilir
+    or public.is_admin()
   );
 
 -- ─────────────────────────────────────────────
 -- 3. EKLEME (INSERT) POLİTİKASI
--- Sadece kendi adına (auth.uid = author_id) ve yalnızca
+-- Sadece kendi adına (auth.uid = author_id), banlanmamış ve yalnızca
 -- kendi duvarına veya kabul edilmiş arkadaşının duvarına yazabilir
 -- ─────────────────────────────────────────────
 drop policy if exists "Users and friends can write on timeline" on public.timeline_posts;
@@ -56,6 +59,10 @@ create policy "Users and friends can write on timeline"
   with check (
     -- Yazar giriş yapmış kullanıcının kendisi olmalıdır
     auth.uid() = author_id
+    and not exists (
+      select 1 from public.profiles
+      where id = auth.uid() and is_banned = true
+    )
     and (
       -- Kendi zaman tüneline yazabilir
       wall_user_id = auth.uid()
@@ -69,20 +76,25 @@ create policy "Users and friends can write on timeline"
             (f.receiver_id = auth.uid() and f.sender_id = timeline_posts.wall_user_id)
           )
       )
+      -- Adminler yazabilir
+      or public.is_admin()
     )
   );
 
 -- ─────────────────────────────────────────────
 -- 4. SİLME (DELETE) POLİTİKASI
 -- Profil sahibi (kendi tünelindeki herhangi bir mesajı) VEYA
--- mesajı yazan yazar silebilir
+-- mesajı yazan yazar VEYA admin silebilir
 -- ─────────────────────────────────────────────
 drop policy if exists "Wall owners and authors can delete timeline posts" on public.timeline_posts;
-create policy "Wall owners and authors can delete timeline posts"
+drop policy if exists "Wall owners, authors, or admins can delete timeline posts" on public.timeline_posts;
+create policy "Wall owners, authors, or admins can delete timeline posts"
   on public.timeline_posts for delete
   using (
     -- Duvar sahibi silebilir
     wall_user_id = auth.uid()
     -- Veya mesajı yazan kişi kendi mesajını silebilir
     or author_id = auth.uid()
+    -- Veya admin silebilir
+    or public.is_admin()
   );

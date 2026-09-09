@@ -1,10 +1,11 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState, useTransition, useEffect } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { createTimelinePost, deleteTimelinePost } from '@/lib/actions/timeline'
 import { useLanguage } from '@/components/LanguageProvider'
+import { createClient } from '@/lib/supabase/client'
 import type { TimelinePost, Profile } from '@/lib/types'
 
 interface TimelineSectionProps {
@@ -31,6 +32,72 @@ export default function TimelineSection({
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
+
+  // Always sync posts when server props (initialPosts) change
+  useEffect(() => {
+    setPosts(initialPosts)
+  }, [initialPosts])
+
+  // Realtime subscription for incoming timeline posts on this wall
+  useEffect(() => {
+    const supabase = createClient()
+    const channel = supabase
+      .channel(`timeline-wall-${wallUserId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'timeline_posts',
+          filter: `wall_user_id=eq.${wallUserId}`,
+        },
+        async (payload) => {
+          const newRow = payload.new as TimelinePost
+          // Check if already in list
+          setPosts(prev => {
+            if (prev.some(p => p.id === newRow.id)) return prev
+            return prev
+          })
+
+          // Fetch author profile
+          const { data: authorProf } = await supabase
+            .from('profiles')
+            .select('id, full_name, profession, avatar_url, role')
+            .eq('id', newRow.author_id)
+            .single()
+
+          const postWithAuthor: TimelinePost = {
+            ...newRow,
+            author: authorProf ?? null,
+          }
+
+          setPosts(prev => {
+            if (prev.some(p => p.id === newRow.id)) return prev
+            return [postWithAuthor, ...prev]
+          })
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'DELETE',
+          schema: 'public',
+          table: 'timeline_posts',
+          filter: `wall_user_id=eq.${wallUserId}`,
+        },
+        (payload) => {
+          const deletedId = (payload.old as { id?: string })?.id
+          if (deletedId) {
+            setPosts(prev => prev.filter(p => p.id !== deletedId))
+          }
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [wallUserId])
 
   const firstName = wallUserName?.split(' ')[0] ?? t('profile.nameless')
   const placeholderText = isOwnProfile
