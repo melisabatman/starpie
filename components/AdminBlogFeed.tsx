@@ -183,14 +183,14 @@ function AdminInlineCreateForm({
         style={{ marginBottom: '12px', resize: 'vertical', minHeight: '110px' }}
       />
 
-      {/* Cover Image Preview */}
+      {/* Photo Preview */}
       {imagePreview && (
         <div className="admin-blog-cover-preview" style={{ marginBottom: '14px' }}>
           <Image
             src={imagePreview}
-            alt="Seçilen Kapak Görseli"
+            alt="Fotoğraf"
             fill
-            style={{ objectFit: 'cover', objectPosition: 'center' }}
+            style={{ objectFit: 'contain', objectPosition: 'center' }}
             unoptimized
           />
           <button
@@ -567,7 +567,7 @@ export default function AdminBlogFeed({
                     data-aos="fade-up"
                     onClick={() => setReadingPost(post)}
                   >
-                    {/* Optional Cover Image */}
+                    {/* Optional Post Photo */}
                     {post.cover_image_url && (
                       <div className="blog-card-cover">
                         <Image
@@ -576,7 +576,7 @@ export default function AdminBlogFeed({
                           fill
                           sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                           loading="lazy"
-                          style={{ objectFit: 'cover', objectPosition: 'center' }}
+                          style={{ objectFit: 'contain', objectPosition: 'center' }}
                         />
                       </div>
                     )}
@@ -735,7 +735,7 @@ export default function AdminBlogFeed({
                 </div>
               </div>
 
-              {/* Cover Image if any */}
+              {/* Post Photo if any */}
               {readingPost.cover_image_url && (
                 <div className="blog-reader-cover">
                   <Image
@@ -744,7 +744,7 @@ export default function AdminBlogFeed({
                     fill
                     sizes="(max-width: 768px) 100vw, 800px"
                     loading="lazy"
-                    style={{ objectFit: 'cover', objectPosition: 'center' }}
+                    style={{ objectFit: 'contain', objectPosition: 'center' }}
                   />
                 </div>
               )}
@@ -859,7 +859,7 @@ export default function AdminBlogFeed({
                 />
               </div>
 
-              {/* Cover Image Upload (Matching PostsSection Component Exactly) */}
+              {/* Photo Upload (Matching PostsSection Component Exactly) */}
               <div className="form-group" style={{ marginBottom: '20px' }}>
                 <label className="form-label" style={{ marginBottom: '8px' }}>
                   {t('blog.cover_image')}
@@ -869,9 +869,9 @@ export default function AdminBlogFeed({
                   <div className="admin-blog-cover-preview" style={{ marginBottom: '12px' }}>
                     <Image
                       src={imagePreview}
-                      alt="Kapak fotoğrafı önizlemesi"
+                      alt="Fotoğraf önizlemesi"
                       fill
-                      style={{ objectFit: 'cover', objectPosition: 'center' }}
+                      style={{ objectFit: 'contain', objectPosition: 'center' }}
                       unoptimized
                     />
                     {isUploading ? (
