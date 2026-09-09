@@ -57,6 +57,37 @@ export async function getAdminPosts(limit: number = 30): Promise<AdminPost[]> {
 }
 
 // ────────────────────────────────────────────────────────────
+// GET ADMIN POSTS BY SPECIFIC AUTHOR
+// ────────────────────────────────────────────────────────────
+
+export async function getAdminPostsByAuthor(authorId: string, limit: number = 30): Promise<AdminPost[]> {
+  const supabase = await createClient()
+
+  const { data: posts, error } = await supabase
+    .from('admin_posts')
+    .select('*')
+    .eq('author_id', authorId)
+    .order('created_at', { ascending: false })
+    .limit(limit)
+
+  if (error || !posts) {
+    console.error('Error fetching admin posts by author:', error)
+    return []
+  }
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('id, full_name, profession, avatar_url, role')
+    .eq('id', authorId)
+    .single()
+
+  return posts.map(p => ({
+    ...p,
+    author: profile ?? null,
+  }))
+}
+
+// ────────────────────────────────────────────────────────────
 // CREATE ADMIN POST
 // ────────────────────────────────────────────────────────────
 
@@ -114,9 +145,23 @@ export async function createAdminPost(
     return { success: false, error: 'Yazı eklenemedi: ' + error.message }
   }
 
-  revalidatePath('/blog')
+  // Fetch author profile so returned post has full author details (avatar, name, role)
+  const { data: authorProfile } = await supabase
+    .from('profiles')
+    .select('id, full_name, profession, avatar_url, role')
+    .eq('id', user.id)
+    .single()
 
-  return { success: true, post: data as AdminPost }
+  revalidatePath('/blog')
+  revalidatePath(`/profile/${user.id}`)
+
+  return {
+    success: true,
+    post: {
+      ...(data as AdminPost),
+      author: authorProfile ?? null,
+    },
+  }
 }
 
 // ────────────────────────────────────────────────────────────

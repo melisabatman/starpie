@@ -9,8 +9,9 @@ import PageHeader from '@/components/PageHeader'
 import { getFriends, checkFriendship } from '@/lib/actions/friends'
 import { getProfilePosts } from '@/lib/actions/posts'
 import { getTimelinePosts } from '@/lib/actions/timeline'
+import { getAdminPostsByAuthor } from '@/lib/actions/blog'
 import { isUserBlocked } from '@/lib/actions/moderation'
-import type { Profile, FeedPost, TimelinePost } from '@/lib/types'
+import type { Profile, FeedPost, TimelinePost, AdminPost } from '@/lib/types'
 
 interface Props {
   params: Promise<{ id: string }>
@@ -56,12 +57,13 @@ export default async function ProfilePage({ params }: Props) {
     ? profile.full_name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
     : '?'
 
-  // Fetch friends (if own profile) and posts / timeline in parallel (only if not blocked)
+  // Fetch friends (if own profile), posts, timeline, and admin posts in parallel (only if not blocked)
   const canViewContent = !blockStatus.blocked && (isOwnProfile || isFriendsWith)
-  const [friends, posts, timelinePosts]: [any[], FeedPost[], TimelinePost[]] = await Promise.all([
+  const [friends, posts, timelinePosts, adminPosts]: [any[], FeedPost[], TimelinePost[], AdminPost[]] = await Promise.all([
     isOwnProfile ? getFriends() : Promise.resolve([]),
-    canViewContent && !isOwnProfile ? getProfilePosts(id) : Promise.resolve([]),
-    canViewContent && !isOwnProfile ? getTimelinePosts(id) : Promise.resolve([]),
+    canViewContent ? getProfilePosts(id) : Promise.resolve([]),
+    canViewContent ? getTimelinePosts(id) : Promise.resolve([]),
+    profile.role === 'admin' ? getAdminPostsByAuthor(id) : Promise.resolve([]),
   ])
 
   return (
@@ -161,6 +163,7 @@ export default async function ProfilePage({ params }: Props) {
                 currentUserProfile={currentUserProfile}
                 initialPosts={posts}
                 initialTimelinePosts={timelinePosts}
+                adminPosts={adminPosts}
               />
             </>
           )}
