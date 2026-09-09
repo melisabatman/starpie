@@ -1,5 +1,6 @@
 export type Profile = {
   id: string
+  username?: string | null
   full_name: string | null
   profession: string | null
   bio: string | null

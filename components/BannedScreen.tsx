@@ -61,9 +61,13 @@ export default function BannedScreen() {
             fontSize: '36px',
             margin: '0 auto 20px',
             border: '2px solid rgba(244, 63, 94, 0.25)',
+            color: '#be123c',
           }}
         >
-          🚫
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="12" r="10" />
+            <line x1="4.93" y1="4.93" x2="19.07" y2="19.07" />
+          </svg>
         </div>
 
         <h2

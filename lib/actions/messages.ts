@@ -180,7 +180,7 @@ export async function sendMessage(
     .insert({
       sender_id: user.id,
       receiver_id: receiverId,
-      content: messageType === 'audio' ? (content ?? '🎤 Sesli mesaj') : (content?.trim() ?? ''),
+      content: messageType === 'audio' ? (content ?? 'Sesli mesaj') : (content?.trim() ?? ''),
       message_type: messageType,
       audio_url: audioUrl ?? null,
       is_read: false,
@@ -208,7 +208,7 @@ export async function sendVoiceMessage(
   receiverId: string,
   audioUrl: string
 ): Promise<{ success: boolean; message?: Message; error?: string }> {
-  return sendMessage(receiverId, '🎤 Sesli mesaj', 'audio', audioUrl)
+  return sendMessage(receiverId, 'Sesli mesaj', 'audio', audioUrl)
 }
 
 // ────────────────────────────────────────────────────────────

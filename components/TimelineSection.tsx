@@ -82,7 +82,7 @@ export default function TimelineSection({
 
   const myInitials = currentUserProfile?.full_name
     ? currentUserProfile.full_name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
-    : '✦'
+    : '?'
 
   return (
     <div className="timeline-section" data-aos="fade-up">
@@ -106,9 +106,9 @@ export default function TimelineSection({
           <div>
             <h3 style={{ fontSize: '15px', fontWeight: 700, color: 'var(--gray-800)' }}>
               {isOwnProfile ? (
-                <span>📝 {t('timeline.tab')}</span>
+                <span>{t('timeline.tab')}</span>
               ) : (
-                <span>💌 {t('timeline.write_placeholder_friend', { name: firstName })}</span>
+                <span>{t('timeline.write_placeholder_friend', { name: firstName })}</span>
               )}
             </h3>
             <span style={{ fontSize: '12.5px', color: 'var(--gray-500)' }}>
@@ -196,7 +196,11 @@ export default function TimelineSection({
       {/* ── Timeline Messages Stream ── */}
       {posts.length === 0 ? (
         <div className="empty-state card" style={{ padding: '48px 24px', borderRadius: 'var(--radius-xl)', textAlign: 'center' }}>
-          <div className="empty-state__icon" style={{ fontSize: '42px', marginBottom: '12px' }}>🕊️</div>
+          <div className="empty-state__icon" style={{ marginBottom: '12px' }}>
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+            </svg>
+          </div>
           <h3 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--gray-800)', marginBottom: '8px' }}>
             {t('timeline.empty_title')}
           </h3>

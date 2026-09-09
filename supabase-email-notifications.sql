@@ -33,18 +33,27 @@ end;
 $$;
 
 -- ─────────────────────────────────────────────
--- 3. EDGE FUNCTION WEBHOOK TALİMATLARI
+-- 3. E-POSTA BİLDİRİMİ İÇİN 2 FARKLI YÖNTEM
 -- ─────────────────────────────────────────────
--- Yeni bir mesaj eklendiğinde Supabase Edge Function'ı tetiklemek için:
 --
--- 1. Supabase Dashboard > Database > Webhooks bölümüne gidin.
--- 2. "Create a new webhook" butonuna tıklayın:
+-- YÖNTEM A: Next.js Sunucu Tarafı (Önerilen & En Kolay - CLI/Deploy Gerektirmez)
+-- 1. Supabase Dashboard > Project Settings > API bölümünden "service_role" gizli anahtarını kopyalayın.
+-- 2. Projenizdeki `.env.local` dosyasına şu satırı ekleyin:
+--    SUPABASE_SERVICE_ROLE_KEY=eyJh... (kopyaladığınız service_role anahtarı)
+--    RESEND_API_KEY=re_... (Resend API anahtarınız)
+-- 3. Starpie mesajlaşma sistemi (lib/actions/messages.ts), alıcı çevrimdışıyken
+--    veya son 3 dakikadır aktif değilken otomatik olarak Resend üzerinden e-posta gönderir.
+--
+-- YÖNTEM B: Supabase Edge Function + Database Webhook
+-- 1. Supabase CLI ile Edge Function'ı deploy edin:
+--    supabase functions deploy send-message-email
+-- 2. Fonksiyona Resend API anahtarını secret olarak tanımlayın:
+--    supabase secrets set RESEND_API_KEY=re_your_api_key
+-- 3. Supabase Dashboard > Database > Webhooks bölümüne gidin ve webhook ekleyin:
 --    - Name: send_message_email_notification
 --    - Table: public.messages
 --    - Events: INSERT
 --    - Type: Supabase Edge Function
 --    - Edge Function: send-message-email
 --    - HTTP Method: POST
--- 3. Edge Function Secrets alanına Resend API anahtarınızı tanımlayın:
---    supabase secrets set RESEND_API_KEY=re_your_api_key
 -- =============================================

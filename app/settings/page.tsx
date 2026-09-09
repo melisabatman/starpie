@@ -50,8 +50,12 @@ export default async function SettingsPage() {
           {/* Section 1: Notifications */}
           <div style={{ marginBottom: '32px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
-              <h3 style={{ fontSize: '17px', fontWeight: 700, color: 'var(--gray-800)', margin: 0 }}>
-                🔔 Bildirimler
+              <h3 style={{ fontSize: '17px', fontWeight: 700, color: 'var(--gray-800)', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                  <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+                </svg>
+                Bildirimler
               </h3>
             </div>
             <p style={{ fontSize: '13.5px', color: 'var(--gray-500)', marginBottom: '16px' }}>
@@ -73,7 +77,10 @@ export default async function SettingsPage() {
               className="btn btn--secondary"
               style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
             >
-              <span>✏️ Profil Bilgilerini Düzenle</span>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" />
+              </svg>
+              <span>Profil Bilgilerini Düzenle</span>
             </Link>
           </div>
         </div>

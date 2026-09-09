@@ -194,7 +194,12 @@ export default function AdminBlogFeed({
       {/* Empty State */}
       {posts.length === 0 ? (
         <div className="blog-card-box blog-empty-state">
-          <div className="blog-empty-icon">📰</div>
+          <div className="blog-empty-icon">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+              <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+            </svg>
+          </div>
           <h3 className="blog-empty-title">{t('blog.empty')}</h3>
           <p className="blog-empty-sub">{t('blog.empty_sub')}</p>
           {isAdmin && (
@@ -273,9 +278,9 @@ export default function AdminBlogFeed({
                     </div>
 
                     <div className="blog-card-date-info">
-                      <span>🗓️ {formatDate(post.created_at)}</span>
+                      <span>{formatDate(post.created_at)}</span>
                       <span>·</span>
-                      <span>☕ {readTime}</span>
+                      <span>{readTime}</span>
                     </div>
                   </div>
 
@@ -347,7 +352,7 @@ export default function AdminBlogFeed({
               <div className="blog-reader-meta">
                 <span className="blog-admin-pill">{t('blog.editorial_pill')}</span>
                 <span className="blog-reader-date">
-                  🗓️ {formatDate(readingPost.created_at)} · ☕ {calculateReadingTime(readingPost.content)}
+                  {formatDate(readingPost.created_at)} · {calculateReadingTime(readingPost.content)}
                 </span>
               </div>
 

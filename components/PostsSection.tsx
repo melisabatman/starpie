@@ -261,7 +261,12 @@ export default function PostsSection({
       {/* Posts list or empty state */}
       {posts.length === 0 ? (
         <div className="empty-state" style={{ padding: '32px 0' }}>
-          <div className="empty-state__icon">{isOwnProfile ? '✍️' : '📭'}</div>
+          <div className="empty-state__icon">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 20h9"/>
+              <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+            </svg>
+          </div>
           <p>
             {isOwnProfile
               ? t('feed.empty_sub')
@@ -300,7 +305,7 @@ export default function PostsSection({
                 {loadingMore ? (
                   <span className="spinner spinner--sm" />
                 ) : (
-                  <span>✨ {t('common.load_more') || 'Daha Fazla Göster'}</span>
+                  <span>{t('common.load_more') || 'Daha Fazla Göster'}</span>
                 )}
               </button>
             </div>

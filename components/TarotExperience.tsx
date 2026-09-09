@@ -240,7 +240,7 @@ export default function TarotExperience({ onGoToHistory }: TarotExperienceProps)
                       <div className="tarot-card-back-pattern">
                         <div className="tarot-card-back-ornament">
                           <span className="tarot-card-back-icon">✦</span>
-                          <span className="tarot-card-back-star">🔮</span>
+                          <span className="tarot-card-back-star">★</span>
                           <span className="tarot-card-back-icon">✦</span>
                         </div>
                         <span className="tarot-card-back-brand">STARPIE</span>
@@ -281,7 +281,11 @@ export default function TarotExperience({ onGoToHistory }: TarotExperienceProps)
               {/* Cosmic Synthesis Summary */}
               <div className="tarot-synthesis-card">
                 <div className="tarot-synthesis-header">
-                  <span className="tarot-synthesis-icon">✨</span>
+                  <span className="tarot-synthesis-icon">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                    </svg>
+                  </span>
                   <div>
                     <h3 className="tarot-synthesis-title">{t('tarot.synthesis_header_title')}</h3>
                     <p className="tarot-synthesis-sub">{t('tarot.synthesis_header_sub')}</p>
@@ -358,7 +362,7 @@ export default function TarotExperience({ onGoToHistory }: TarotExperienceProps)
                     onClick={onGoToHistory}
                     style={{ width: 'auto' }}
                   >
-                    📜 {t('tarot.history_tab')}
+                    {t('tarot.history_tab')}
                   </button>
                 )}
               </div>

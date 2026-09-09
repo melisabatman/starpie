@@ -327,7 +327,7 @@ export default function ChatWindow({
           id: tempId,
           sender_id: currentUserId,
           receiver_id: partner.id,
-          content: '🎤 Sesli mesaj',
+          content: 'Sesli mesaj',
           message_type: 'audio',
           audio_url: publicUrl,
           is_read: false,
@@ -430,7 +430,7 @@ export default function ChatWindow({
               </p>
             ) : (
               <p className="chat-header__sub chat-header__sub--offline" style={{ color: 'var(--gray-400)' }}>
-                {partner.profession ? `✦ ${partner.profession}` : t('messages.offline')}
+                {partner.profession ? partner.profession : t('messages.offline')}
               </p>
             )}
           </div>
@@ -462,7 +462,11 @@ export default function ChatWindow({
       <div className="chat-messages">
         {messages.length === 0 ? (
           <div className="chat-empty">
-            <div className="chat-empty__icon">🌸</div>
+            <div className="chat-empty__icon">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+              </svg>
+            </div>
             <p className="chat-empty__title">
               {partner.full_name ?? t('profile.nameless')}
             </p>
@@ -552,7 +556,7 @@ export default function ChatWindow({
       {/* ── Error Banner ── */}
       {errorMsg && (
         <div className="chat-error-banner">
-          <span>⚠️ {errorMsg}</span>
+          <span>{errorMsg}</span>
           <button onClick={() => setErrorMsg(null)} aria-label={t('nav.close')}>
             ✕
           </button>
@@ -568,7 +572,7 @@ export default function ChatWindow({
           </div>
 
           <p className="recording-hint">
-            {t('messages.recording')} {t('messages.release_to_send')} 🎙️
+            {t('messages.recording')} {t('messages.release_to_send')}
           </p>
 
           <button

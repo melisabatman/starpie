@@ -430,7 +430,14 @@ export default function SharedCalendar({
         {/* Selected Day Details Panel */}
         <div className="calendar-day-details-card" data-aos="fade-up" data-aos-delay="150">
           <div className="calendar-details-header">
-            <div className="calendar-details-header-icon">📅</div>
+            <div className="calendar-details-header-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                <line x1="16" y1="2" x2="16" y2="6"/>
+                <line x1="8" y1="2" x2="8" y2="6"/>
+                <line x1="3" y1="10" x2="21" y2="10"/>
+              </svg>
+            </div>
             <div>
               <h3 className="calendar-details-date">
                 {formatDisplayDate(selectedDate, lang)}
@@ -455,7 +462,14 @@ export default function SharedCalendar({
           <div className="calendar-details-list">
             {selectedDayEvents.length === 0 ? (
               <div className="calendar-empty-day">
-                <div className="calendar-empty-icon">✨</div>
+                <div className="calendar-empty-icon">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                    <line x1="16" y1="2" x2="16" y2="6"/>
+                    <line x1="8" y1="2" x2="8" y2="6"/>
+                    <line x1="3" y1="10" x2="21" y2="10"/>
+                  </svg>
+                </div>
                 <p className="calendar-empty-text">{t('calendar.empty_day_prompt')}</p>
                 <button
                   type="button"
@@ -485,11 +499,11 @@ export default function SharedCalendar({
                               : 'calendar-creator-badge--partner'
                           }`}
                         >
-                          {isMine ? `🌸 ${t('mood.you')}` : `💜 ${partnerName}`}
+                          {isMine ? t('mood.you') : partnerName}
                         </span>
 
                         <span className="calendar-event-time">
-                          🕒 {formatTime(event.event_time, t('calendar.all_day'))}
+                          {formatTime(event.event_time, t('calendar.all_day'))}
                         </span>
                       </div>
 
@@ -539,7 +553,14 @@ export default function SharedCalendar({
           >
             <div className="calendar-modal-header">
               <div className="calendar-modal-title-group">
-                <span className="calendar-modal-icon">🌸</span>
+                <span className="calendar-modal-icon">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                    <line x1="16" y1="2" x2="16" y2="6"/>
+                    <line x1="8" y1="2" x2="8" y2="6"/>
+                    <line x1="3" y1="10" x2="21" y2="10"/>
+                  </svg>
+                </span>
                 <div>
                   <h3 className="calendar-modal-title">{t('calendar.add_event_full')}</h3>
                   <p className="calendar-modal-sub">
@@ -632,7 +653,7 @@ export default function SharedCalendar({
               <div className="calendar-creator-preview">
                 <span className="calendar-creator-preview-label">{t('calendar.preview_badge_label')}</span>
                 <span className="calendar-creator-badge calendar-creator-badge--mine">
-                  🌸 {myName} ({t('mood.you')})
+                  {myName} ({t('mood.you')})
                 </span>
               </div>
 

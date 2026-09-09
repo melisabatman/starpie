@@ -69,7 +69,7 @@ function PolaroidCard({
             {memory.caption ? (
               <p className="polaroid-caption">{memory.caption}</p>
             ) : (
-              <p className="polaroid-caption polaroid-caption--empty">✨</p>
+              <p className="polaroid-caption polaroid-caption--empty">&nbsp;</p>
             )}
             <div className="polaroid-meta">
               <span className="polaroid-date">

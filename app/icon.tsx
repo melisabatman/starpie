@@ -11,7 +11,9 @@ export default function Icon() {
     (
       <div
         style={{
-          fontSize: 22,
+          fontSize: 18,
+          fontWeight: 800,
+          color: '#ffffff',
           background: 'linear-gradient(135deg, #ec4899, #f43f5e)',
           width: '100%',
           height: '100%',
@@ -19,9 +21,10 @@ export default function Icon() {
           alignItems: 'center',
           justifyContent: 'center',
           borderRadius: '50%',
+          fontFamily: 'sans-serif',
         }}
       >
-        🌸
+        S
       </div>
     ),
     {

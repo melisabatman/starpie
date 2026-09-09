@@ -350,7 +350,6 @@ export default function AppNavigation() {
         {/* Drawer Header with Close Button */}
         <div className="drawer-header">
           <div className="drawer-header__title">
-            <span className="drawer-sparkle">✨</span>
             <span>Starpie Menü</span>
           </div>
           <button
@@ -414,7 +413,12 @@ export default function AppNavigation() {
               className={`drawer-link ${pathname.startsWith('/blog') ? 'drawer-link--active' : ''}`}
               onClick={() => setIsOpen(false)}
             >
-              <div className="drawer-link__icon-box drawer-link__icon-box--blog">📰</div>
+              <div className="drawer-link__icon-box drawer-link__icon-box--blog">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+                  <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+                </svg>
+              </div>
               <div className="drawer-link__content">
                 <span className="drawer-link__title">
                   {t('nav.blog')}
@@ -435,7 +439,11 @@ export default function AppNavigation() {
               className={`drawer-link ${pathname.startsWith('/tarot') ? 'drawer-link--active' : ''}`}
               onClick={() => setIsOpen(false)}
             >
-              <div className="drawer-link__icon-box drawer-link__icon-box--tarot">🔮</div>
+              <div className="drawer-link__icon-box drawer-link__icon-box--tarot">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                </svg>
+              </div>
               <div className="drawer-link__content">
                 <span className="drawer-link__title">
                   {t('nav.tarot')}
@@ -453,7 +461,12 @@ export default function AppNavigation() {
               className="drawer-link"
               onClick={() => setIsOpen(false)}
             >
-              <div className="drawer-link__icon-box drawer-link__icon-box--edit">✏️</div>
+              <div className="drawer-link__icon-box drawer-link__icon-box--edit">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                </svg>
+              </div>
               <div className="drawer-link__content">
                 <span className="drawer-link__title">
                   {t('nav.edit_profile')}
@@ -474,11 +487,11 @@ export default function AppNavigation() {
             {/* Tema Seçimi */}
             <div className="drawer-setting-box">
               <div className="drawer-setting-label">
-                <span>🎨 {t('nav.theme')}</span>
+                <span>{t('nav.theme')}</span>
                 <span className="drawer-setting-val">
-                  {theme === 'pink' && `🌸 ${t('nav.theme_pink')}`}
-                  {theme === 'dark' && `🌙 ${t('nav.theme_dark')}`}
-                  {theme === 'lavender' && `💜 ${t('nav.theme_lavender')}`}
+                  {theme === 'pink' && t('nav.theme_pink')}
+                  {theme === 'dark' && t('nav.theme_dark')}
+                  {theme === 'lavender' && t('nav.theme_lavender')}
                 </span>
               </div>
 
@@ -518,7 +531,7 @@ export default function AppNavigation() {
             {/* Dil Seçimi */}
             <div className="drawer-setting-box" style={{ marginTop: '12px' }}>
               <div className="drawer-setting-label">
-                <span>🌐 {t('nav.language')}</span>
+                <span>{t('nav.language')}</span>
                 <span className="drawer-setting-val">{lang === 'tr' ? 'Türkçe' : 'English'}</span>
               </div>
 
@@ -528,14 +541,14 @@ export default function AppNavigation() {
                   className={`lang-chip ${lang === 'tr' ? 'lang-chip--active' : ''}`}
                   onClick={() => handleLangChange('tr')}
                 >
-                  🇹🇷 Türkçe
+                  Türkçe
                 </button>
                 <button
                   type="button"
                   className={`lang-chip ${lang === 'en' ? 'lang-chip--active' : ''}`}
                   onClick={() => handleLangChange('en')}
                 >
-                  🇬🇧 English
+                  English
                 </button>
               </div>
             </div>
@@ -553,7 +566,12 @@ export default function AppNavigation() {
               onClick={() => setIsOpen(false)}
               style={{ marginTop: '10px', background: 'var(--pink-50)' }}
             >
-              <div className="drawer-link__icon-box" style={{ background: 'white' }}>⚙️</div>
+              <div className="drawer-link__icon-box" style={{ background: 'white' }}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="3" />
+                  <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+                </svg>
+              </div>
               <div className="drawer-link__content">
                 <span className="drawer-link__title" style={{ fontSize: '13.5px' }}>
                   {t('settings.title')}
@@ -572,7 +590,7 @@ export default function AppNavigation() {
               className="drawer-accordion-btn"
               onClick={() => setAboutOpen(prev => !prev)}
             >
-              <span>ℹ️ {t('nav.about')}</span>
+              <span>{t('nav.about')}</span>
               <span className={`drawer-accordion-chevron ${aboutOpen ? 'open' : ''}`}>▾</span>
             </button>
 
@@ -582,10 +600,10 @@ export default function AppNavigation() {
                   <strong>{t('nav.about_title')}</strong> — {t('nav.about_desc')}
                 </p>
                 <ul>
-                  <li>💬 {t('nav.about_f1')}</li>
-                  <li>💖 {t('nav.about_f2')}</li>
-                  <li>💭 {t('nav.about_f3')}</li>
-                  <li>🔮 {t('nav.about_f4')}</li>
+                  <li>{t('nav.about_f1')}</li>
+                  <li>{t('nav.about_f2')}</li>
+                  <li>{t('nav.about_f3')}</li>
+                  <li>{t('nav.about_f4')}</li>
                 </ul>
                 <p className="drawer-version-text">© 2026 Starpie. All rights reserved.</p>
               </div>

@@ -197,7 +197,14 @@ export default function SharedJournal({
         <form className="journal-form-card" onSubmit={handleCreateSubmit} noValidate data-aos="fade-up">
           <div className="journal-form-header">
             <div className="journal-form-date-stamp">
-              <span className="journal-stamp-icon">🗓️</span>
+              <span className="journal-stamp-icon">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                  <line x1="16" y1="2" x2="16" y2="6"/>
+                  <line x1="8" y1="2" x2="8" y2="6"/>
+                  <line x1="3" y1="10" x2="21" y2="10"/>
+                </svg>
+              </span>
               <span className="journal-stamp-text">{t('journal.form_date_stamp', { date: todayFormatted })}</span>
             </div>
             <button
@@ -327,7 +334,12 @@ export default function SharedJournal({
       {/* ── Entries List ── */}
       {entries.length === 0 && !isWriting ? (
         <div className="journal-empty-card" data-aos="fade-up">
-          <div className="journal-empty-icon">📖</div>
+          <div className="journal-empty-icon">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/>
+              <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
+            </svg>
+          </div>
           <h3 className="journal-empty-title">{t('journal.empty_title')}</h3>
           <p className="journal-empty-sub">
             {t('journal.empty_sub')}
@@ -379,7 +391,7 @@ export default function SharedJournal({
                         {isOwner && <span className="journal-me-pill">{t('mood.you')}</span>}
                       </div>
                       <div className="journal-card__date-line">
-                        <span>🗓️ {formatDate(entry.entry_date || entry.created_at, lang)}</span>
+                        <span>{formatDate(entry.entry_date || entry.created_at, lang)}</span>
                         {entry.created_at && (
                           <span className="journal-time-dot">• {formatTime(entry.created_at)}</span>
                         )}

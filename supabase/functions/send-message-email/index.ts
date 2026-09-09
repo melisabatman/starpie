@@ -107,7 +107,7 @@ serve(async (req: Request) => {
 
     // 5. Build Email Content
     const messagePreview = message_type === 'audio'
-      ? '🎤 1 yeni sesli mesaj'
+      ? '1 yeni sesli mesaj'
       : (content && content.trim().length > 140 ? content.trim().slice(0, 140) + '...' : content?.trim() || 'Yeni bir mesaj')
 
     const chatUrl = `${appUrl}/messages/${sender_id}`
@@ -138,9 +138,9 @@ serve(async (req: Request) => {
       <body>
         <div class="container">
           <div class="header">
-            <a href="${appUrl}" class="logo">🌸 Starpie</a>
+            <a href="${appUrl}" class="logo">Starpie</a>
             <br/>
-            <span class="badge">💬 Yeni Mesaj Bildirimi</span>
+            <span class="badge">Yeni Mesaj Bildirimi</span>
           </div>
 
           <h1 class="title">Merhaba ${receiverName}!</h1>
@@ -149,12 +149,12 @@ serve(async (req: Request) => {
           </p>
 
           <div class="bubble-box">
-            <div class="sender-label">💌 ${senderName}:</div>
+            <div class="sender-label">${senderName}:</div>
             <p class="msg-text">${messagePreview}</p>
           </div>
 
           <div class="btn-container">
-            <a href="${chatUrl}" class="btn">Mesajı Gör ve Yanıtla ✨</a>
+            <a href="${chatUrl}" class="btn">Mesajı Gör ve Yanıtla</a>
           </div>
 
           <div class="footer">
@@ -176,7 +176,7 @@ serve(async (req: Request) => {
       body: JSON.stringify({
         from: fromEmail,
         to: [receiverEmail],
-        subject: `🌸 ${senderName} sana bir mesaj gönderdi!`,
+        subject: `${senderName} sana bir mesaj gönderdi`,
         html: htmlBody,
       }),
     })

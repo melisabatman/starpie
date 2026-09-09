@@ -55,7 +55,7 @@ create policy "Users can delete own posts"
 -- =============================================
 -- Storage: "posts" Bucket
 -- Supabase Dashboard > Storage > New Bucket
--- Name: posts   |   Public: ✅ aktif
+-- Name: posts   |   Public: aktif
 -- =============================================
 
 -- Storage politikaları (isteğe bağlı SQL ile oluşturma)

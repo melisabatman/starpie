@@ -129,7 +129,7 @@ function FriendButton({
 
   if (friendshipStatus === 'pending' && friendshipSenderId !== currentUserId) {
     return (
-      <span className="friend-badge friend-badge--incoming">💌 {t('friends.accept')}</span>
+      <span className="friend-badge friend-badge--incoming">{t('friends.accept')}</span>
     )
   }
 
@@ -217,14 +217,22 @@ function SearchPanel({ currentUserId }: { currentUserId: string }) {
       {/* Results */}
       {query.trim().length < 2 && (
         <div className="empty-state">
-          <div className="empty-state__icon">🔍</div>
+          <div className="empty-state__icon">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+          </div>
           <p>{t('friends.search_placeholder')}</p>
         </div>
       )}
 
       {searched && results.length === 0 && !isSearching && (
         <div className="empty-state">
-          <div className="empty-state__icon">😕</div>
+          <div className="empty-state__icon">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10"/><line x1="8" y1="15" x2="16" y2="15"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/>
+            </svg>
+          </div>
           <p>{t('friends.search_empty')}</p>
         </div>
       )}
@@ -281,7 +289,11 @@ function RequestsPanel({
     return (
       <div className="panel">
         <div className="empty-state">
-          <div className="empty-state__icon">💌</div>
+          <div className="empty-state__icon">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/>
+            </svg>
+          </div>
           <p>{t('friends.no_requests')}</p>
         </div>
       </div>
@@ -357,7 +369,11 @@ function FriendsPanel({ initialFriends }: { initialFriends: Friend[] }) {
     return (
       <div className="panel">
         <div className="empty-state">
-          <div className="empty-state__icon">👥</div>
+          <div className="empty-state__icon">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+            </svg>
+          </div>
           <p>{t('friends.no_friends')}</p>
         </div>
       </div>

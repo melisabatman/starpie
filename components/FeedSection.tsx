@@ -277,7 +277,7 @@ export default function FeedSection({
       <div className="feed-stream" style={{ marginTop: '24px' }}>
         <div className="feed-stream__header" style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <h2 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--gray-800)' }}>
-            🌟 {t('feed.title')}
+            {t('feed.title')}
           </h2>
           <span style={{ fontSize: '13px', color: 'var(--gray-500)', fontWeight: 500 }}>
             {posts.length} {posts.length === 1 ? 'post' : 'posts'}
@@ -286,7 +286,12 @@ export default function FeedSection({
 
         {posts.length === 0 ? (
           <div className="empty-state card" style={{ padding: '40px 16px', borderRadius: 'var(--radius-xl)' }}>
-            <div className="empty-state__icon">🌸</div>
+            <div className="empty-state__icon">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+                <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+              </svg>
+            </div>
             <h3 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--gray-800)', marginBottom: '8px' }}>
               {t('feed.empty_title')}
             </h3>
@@ -294,7 +299,7 @@ export default function FeedSection({
               {t('feed.empty_sub')}
             </p>
             <Link href="/friends" className="btn btn--secondary" style={{ display: 'inline-flex', width: 'auto' }}>
-              👥 {t('friends.title')}
+              {t('friends.title')}
             </Link>
           </div>
         ) : (
@@ -329,7 +334,12 @@ export default function FeedSection({
                   {loadingMore ? (
                     <span className="spinner spinner--sm" />
                   ) : (
-                    <span>✨ {t('common.load_more') || 'Daha Fazla Göster'}</span>
+                    <>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="6 9 12 15 18 9" />
+                      </svg>
+                      <span>{t('common.load_more') || 'Daha Fazla Göster'}</span>
+                    </>
                   )}
                 </button>
               </div>

@@ -46,6 +46,7 @@
 html {
   font-size: 16px;
   scroll-behavior: smooth;
+  overflow-x: hidden;
 }
 
 body {
@@ -56,6 +57,7 @@ body {
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
 }
 
 /* =================== LAYOUT =================== */
@@ -2605,15 +2607,14 @@ body {
 @media (max-width: 640px) {
   .chat-page-layout {
     padding: 0;
-    height: 100vh;
-    height: 100dvh;
+    height: calc(100dvh - 126px);
+    min-height: calc(100dvh - 126px);
   }
 
   .chat-page-container {
     border-radius: 0;
-    height: 100vh;
-    height: 100dvh;
-    max-height: 100dvh;
+    height: 100%;
+    max-height: 100%;
     box-shadow: none;
     border: none;
   }
@@ -8041,4 +8042,130 @@ body:has(.app-topbar) {
 .skeleton-circle {
   border-radius: 50%;
 }
+
+/* =================== MOBILE RESPONSIVENESS & ALIGNMENT (375px - 480px) =================== */
+
+@media (max-width: 640px) {
+  /* Prevent horizontal scroll bleed on narrow devices */
+  html, body {
+    max-width: 100vw;
+    overflow-x: hidden;
+  }
+
+  /* Page Wrapper paddings */
+  .page-wrapper {
+    padding: 16px 12px 24px;
+  }
+
+  .page-wrapper--top {
+    padding-top: 24px;
+  }
+
+  /* Space Hub Tabs */
+  .space-tabs {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    white-space: nowrap;
+    scrollbar-width: none;
+    padding: 4px;
+    gap: 4px;
+    border-radius: var(--radius-lg);
+  }
+
+  .space-tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .space-tab {
+    flex: 0 0 auto;
+    padding: 8px 12px;
+    font-size: 13px;
+    white-space: nowrap;
+  }
+
+  /* Friends Hub Tabs */
+  .friends-tabs {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    gap: 4px;
+  }
+
+  .friends-tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .friends-tab {
+    flex: 1 0 auto;
+    min-width: max-content;
+    padding: 12px 10px;
+    font-size: 12.5px;
+    white-space: nowrap;
+  }
+
+  /* Calendar Grid Responsive Sizing */
+  .calendar-grid-card {
+    padding: 12px 8px;
+    border-radius: var(--radius-lg);
+  }
+
+  .calendar-weekdays-row {
+    gap: 3px;
+    margin-bottom: 6px;
+  }
+
+  .calendar-weekday-col {
+    font-size: 11px;
+    padding: 4px 0;
+  }
+
+  .calendar-days-grid {
+    gap: 3px;
+  }
+
+  .calendar-day-cell {
+    min-height: 62px;
+    padding: 4px 3px;
+    border-radius: 6px;
+  }
+
+  .calendar-day-number {
+    font-size: 11.5px;
+  }
+
+  .calendar-event-pill {
+    font-size: 9.5px;
+    padding: 1px 4px;
+  }
+
+  /* Polaroid Cards: avoid rotation clipping & horizontal overflow */
+  .polaroid-card {
+    transform: none !important;
+    max-width: 100%;
+  }
+
+  .polaroid-grid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+    padding: 8px 0;
+  }
+
+  /* Card and Modal Mobile Paddings */
+  .card {
+    padding: 22px 16px;
+    border-radius: var(--radius-lg);
+  }
+
+  .modal-card {
+    max-width: 95vw;
+    padding: 20px 16px;
+    border-radius: var(--radius-lg);
+  }
+
+  /* Chat Header Mobile Padding */
+  .chat-header {
+    padding: 12px 14px;
+  }
+}
+
 

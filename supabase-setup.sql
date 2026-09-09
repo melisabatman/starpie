@@ -6,6 +6,7 @@
 -- 1. profiles tablosunu oluştur
 create table if not exists public.profiles (
   id uuid references auth.users on delete cascade primary key,
+  username text unique,
   full_name text,
   profession text,
   bio text,

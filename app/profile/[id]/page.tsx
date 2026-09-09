@@ -104,7 +104,7 @@ export default async function ProfilePage({ params }: Props) {
             </h1>
 
             {profile.profession && (
-              <span className="profile-profession">✦ {profile.profession}</span>
+              <span className="profile-profession">{profile.profession}</span>
             )}
           </div>
 
@@ -136,7 +136,7 @@ export default async function ProfilePage({ params }: Props) {
                     fontSize: '13.5px',
                   }}
                 >
-                  ⚠️ <strong>Yönetici Uyarısı:</strong> Bu kullanıcının hesabı askıya alınmıştır (banlı). Normal kullanıcılar bu profili göremez.
+                  <strong>Yönetici Uyarısı:</strong> Bu kullanıcının hesabı askıya alınmıştır (banlı). Normal kullanıcılar bu profili göremez.
                 </div>
               )}
               <ProfileContentTabs

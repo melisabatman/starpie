@@ -174,7 +174,7 @@ export default function SpaceHub({
         {allActiveSpaces && allActiveSpaces.length > 0 && (
           <div className="space-switcher-bar">
             <span className="space-switcher-label">
-              💖 {lang === 'tr' ? 'Ortak Alanlar' : 'Partner Spaces'}:
+              {lang === 'tr' ? 'Ortak Alanlar' : 'Partner Spaces'}:
             </span>
             <div className="space-switcher-list">
               {allActiveSpaces.map(s => {
@@ -212,7 +212,11 @@ export default function SpaceHub({
               name={currentUserProfile.full_name}
               size={64}
             />
-            <div className="space-heart-badge">💖</div>
+            <div className="space-heart-badge">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+              </svg>
+            </div>
             <MiniAvatar
               avatarUrl={partner?.avatar_url}
               name={partner?.full_name}
@@ -264,7 +268,12 @@ export default function SpaceHub({
             className={`space-tab ${activeTab === 'polaroids' ? 'space-tab--active' : ''}`}
             onClick={() => setActiveTab('polaroids')}
           >
-            <span className="space-tab-icon">📸</span>
+            <span className="space-tab-icon">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                <circle cx="12" cy="13" r="4"/>
+              </svg>
+            </span>
             <span>{t('space.tab_polaroids')}</span>
             {initialMemories.length > 0 && (
               <span className="space-tab-count">{initialMemories.length}</span>
@@ -278,7 +287,14 @@ export default function SpaceHub({
             className={`space-tab ${activeTab === 'mood' ? 'space-tab--active' : ''}`}
             onClick={() => setActiveTab('mood')}
           >
-            <span className="space-tab-icon">💭</span>
+            <span className="space-tab-icon">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10"/>
+                <path d="M8 14s1.5 2 4 2 4-2 4-2"/>
+                <line x1="9" y1="9" x2="9.01" y2="9"/>
+                <line x1="15" y1="9" x2="15.01" y2="9"/>
+              </svg>
+            </span>
             <span>{t('space.tab_mood')}</span>
             {initialTodayMoods.myMood && (
               <span className="space-tab-emoji-badge">
@@ -294,7 +310,14 @@ export default function SpaceHub({
             className={`space-tab ${activeTab === 'calendar' ? 'space-tab--active' : ''}`}
             onClick={() => setActiveTab('calendar')}
           >
-            <span className="space-tab-icon">📅</span>
+            <span className="space-tab-icon">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                <line x1="16" y1="2" x2="16" y2="6"/>
+                <line x1="8" y1="2" x2="8" y2="6"/>
+                <line x1="3" y1="10" x2="21" y2="10"/>
+              </svg>
+            </span>
             <span>{t('space.tab_calendar')}</span>
             {initialEvents.length > 0 && (
               <span className="space-tab-count">{initialEvents.length}</span>
@@ -308,7 +331,12 @@ export default function SpaceHub({
             className={`space-tab ${activeTab === 'journal' ? 'space-tab--active' : ''}`}
             onClick={() => setActiveTab('journal')}
           >
-            <span className="space-tab-icon">📖</span>
+            <span className="space-tab-icon">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/>
+                <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
+              </svg>
+            </span>
             <span>{t('space.tab_journal')}</span>
             {initialJournalEntries.length > 0 && (
               <span className="space-tab-count">{initialJournalEntries.length}</span>
@@ -368,7 +396,7 @@ export default function SpaceHub({
       {allActiveSpaces && allActiveSpaces.length > 0 && (
         <div className="space-switcher-bar">
           <span className="space-switcher-label">
-            💖 {lang === 'tr' ? 'Mevcut Alanlarım' : 'Active Spaces'}:
+            {lang === 'tr' ? 'Mevcut Alanlarım' : 'Active Spaces'}:
           </span>
           <div className="space-switcher-list">
             {allActiveSpaces.map(s => {
@@ -390,7 +418,11 @@ export default function SpaceHub({
 
       {/* Intro Card */}
       <div className="space-intro-card" data-aos="fade-up">
-        <div className="space-intro-icon">💖</div>
+        <div className="space-intro-icon">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+          </svg>
+        </div>
         <h1 className="space-intro-title">{t('space.intro_title')}</h1>
         <p className="space-intro-sub">
           {t('space.intro_desc')}
@@ -406,7 +438,7 @@ export default function SpaceHub({
       {/* Incoming Invitations */}
       {pendingReceived.length > 0 && (
         <div className="space-section-box" data-aos="fade-up" data-aos-delay="80">
-          <h3 className="space-section-title">💌 {t('space.incoming_invites')}</h3>
+          <h3 className="space-section-title">{t('space.incoming_invites')}</h3>
           <div className="space-invite-list">
             {pendingReceived.map(space => (
               <div key={space.id} className="space-invite-card">
@@ -421,7 +453,7 @@ export default function SpaceHub({
                       {space.partner?.full_name ?? t('profile.nameless')}
                     </h4>
                     <p className="space-invite-hint">
-                      {t('space.invited_you')} 🌸
+                      {t('space.invited_you')}
                     </p>
                   </div>
                 </div>
@@ -437,7 +469,7 @@ export default function SpaceHub({
                     {loadingId === space.id ? (
                       <span className="spinner spinner--sm" />
                     ) : (
-                      `${t('friends.accept')} ✨`
+                      t('friends.accept')
                     )}
                   </button>
 
@@ -460,7 +492,7 @@ export default function SpaceHub({
       {/* Sent Pending Invitations */}
       {pendingSent.length > 0 && (
         <div className="space-section-box">
-          <h3 className="space-section-title">⏳ {t('space.outgoing_invites')}</h3>
+          <h3 className="space-section-title">{t('space.outgoing_invites')}</h3>
           <div className="space-invite-list">
             {pendingSent.map(space => (
               <div key={space.id} className="space-invite-card space-invite-card--sent">
@@ -489,7 +521,7 @@ export default function SpaceHub({
       {/* Friends List: Choose Partner */}
       <div className="space-section-box">
         <h3 className="space-section-title">
-          👥 {t('space.choose_friend')}
+          {t('space.choose_friend')}
         </h3>
         <p className="space-section-sub">
           {t('space.select_partner_prompt')}
@@ -497,7 +529,11 @@ export default function SpaceHub({
 
         {friends.length === 0 ? (
           <div className="empty-state" style={{ padding: '32px 16px' }}>
-            <div className="empty-state__icon">🌸</div>
+            <div className="empty-state__icon">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+              </svg>
+            </div>
             <p>{t('space.no_friends_alert')}</p>
             <Link
               href="/friends"
@@ -547,7 +583,7 @@ export default function SpaceHub({
                           {friend.full_name ?? t('profile.nameless')}
                           {isTarget && (
                             <span style={{ fontSize: '11px', color: 'var(--pink-600)', marginLeft: '6px', fontWeight: 600 }}>
-                              ✦ {lang === 'tr' ? 'Seçilen' : 'Selected'}
+                              {lang === 'tr' ? 'Seçilen' : 'Selected'}
                             </span>
                           )}
                         </h4>
@@ -572,7 +608,7 @@ export default function SpaceHub({
                       {loadingId === friend.id ? (
                         <span className="spinner spinner--sm" />
                       ) : (
-                        <>{t('space.choose_friend')} 💖</>
+                        <>{t('space.choose_friend')}</>
                       )}
                     </button>
                   )}

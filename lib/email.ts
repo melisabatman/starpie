@@ -8,7 +8,7 @@ import type { Message } from '@/lib/types'
 export async function sendEmailNotificationIfOffline(message: Message) {
   const apiKey = process.env.RESEND_API_KEY
   if (!apiKey) {
-    // API key not configured yet
+    console.warn('[Email] RESEND_API_KEY ortam değişkeni tanımlı değil. E-posta bildirimi gönderilmedi.')
     return
   }
 
@@ -16,16 +16,20 @@ export async function sendEmailNotificationIfOffline(message: Message) {
     const supabase = await createClient()
 
     // 1. Check receiver profile
-    const { data: receiverProfile } = await supabase
+    const { data: receiverProfile, error: rProfileErr } = await supabase
       .from('profiles')
       .select('id, full_name, email_notifications_enabled, last_seen_at')
       .eq('id', message.receiver_id)
       .single()
 
-    if (!receiverProfile) return
+    if (rProfileErr || !receiverProfile) {
+      console.warn('[Email] Alıcı profili bulunamadı:', message.receiver_id, rProfileErr)
+      return
+    }
 
     // If receiver muted email notifications, skip
     if (receiverProfile.email_notifications_enabled === false) {
+      console.info('[Email] Alıcı e-posta bildirimlerini kapatmış, gönderim atlandı:', receiverProfile.id)
       return
     }
 
@@ -37,6 +41,7 @@ export async function sendEmailNotificationIfOffline(message: Message) {
       const threeMinutesMs = 3 * 60 * 1000
 
       if (diffMs < threeMinutesMs) {
+        console.info('[Email] Alıcı son 3 dakika içinde aktif (çevrimiçi), e-posta bildirimi atlandı.')
         return
       }
     }
@@ -52,7 +57,6 @@ export async function sendEmailNotificationIfOffline(message: Message) {
     const receiverName = receiverProfile.full_name?.split(' ')[0] ?? 'Kullanıcı'
 
     // 3. Fetch receiver email from auth.users via admin client or auth check
-    // If supabase service key is provided in env, use admin client
     let receiverEmail: string | null = null
     const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -60,11 +64,17 @@ export async function sendEmailNotificationIfOffline(message: Message) {
     if (serviceKey && supabaseUrl) {
       const { createClient: createSupabaseAdmin } = await import('@supabase/supabase-js')
       const adminClient = createSupabaseAdmin(supabaseUrl, serviceKey)
-      const { data: authUser } = await adminClient.auth.admin.getUserById(message.receiver_id)
+      const { data: authUser, error: authErr } = await adminClient.auth.admin.getUserById(message.receiver_id)
+      if (authErr) {
+        console.error('[Email] Supabase admin getUserById hatası:', authErr.message)
+      }
       receiverEmail = authUser?.user?.email ?? null
+    } else {
+      console.warn('[Email] SUPABASE_SERVICE_ROLE_KEY ortam değişkeni eksik! auth.users tablosundan alıcının e-posta adresi sorgulanamadı. Lütfen .env.local ve sunucu ortamına SUPABASE_SERVICE_ROLE_KEY ekleyin.')
     }
 
     if (!receiverEmail) {
+      console.warn('[Email] Alıcının e-posta adresi bulunamadığı için e-posta gönderilemedi.')
       return
     }
 
@@ -72,7 +82,7 @@ export async function sendEmailNotificationIfOffline(message: Message) {
     const fromEmail = process.env.RESEND_FROM_EMAIL || 'Starpie <onboarding@resend.dev>'
 
     const messagePreview = message.message_type === 'audio'
-      ? '🎤 1 yeni sesli mesaj'
+      ? '1 yeni sesli mesaj'
       : (message.content && message.content.length > 140
           ? message.content.slice(0, 140) + '...'
           : message.content || 'Yeni bir mesaj')
@@ -105,9 +115,9 @@ export async function sendEmailNotificationIfOffline(message: Message) {
       <body>
         <div class="container">
           <div class="header">
-            <a href="${appUrl}" class="logo">🌸 Starpie</a>
+            <a href="${appUrl}" class="logo">Starpie</a>
             <br/>
-            <span class="badge">💬 Yeni Mesaj Bildirimi</span>
+            <span class="badge">Yeni Mesaj Bildirimi</span>
           </div>
 
           <h1 class="title">Merhaba ${receiverName}!</h1>
@@ -116,12 +126,12 @@ export async function sendEmailNotificationIfOffline(message: Message) {
           </p>
 
           <div class="bubble-box">
-            <div class="sender-label">💌 ${senderName}:</div>
+            <div class="sender-label">${senderName}:</div>
             <p class="msg-text">${messagePreview}</p>
           </div>
 
           <div class="btn-container">
-            <a href="${chatUrl}" class="btn">Mesajı Gör ve Yanıtla ✨</a>
+            <a href="${chatUrl}" class="btn">Mesajı Gör ve Yanıtla</a>
           </div>
 
           <div class="footer">
@@ -133,7 +143,9 @@ export async function sendEmailNotificationIfOffline(message: Message) {
       </html>
     `
 
-    await fetch('https://api.resend.com/emails', {
+    console.info(`[Email] Resend API üzerinden ${receiverEmail} adresine bildirim gönderiliyor...`)
+
+    const resendResponse = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -142,11 +154,19 @@ export async function sendEmailNotificationIfOffline(message: Message) {
       body: JSON.stringify({
         from: fromEmail,
         to: [receiverEmail],
-        subject: `🌸 ${senderName} sana bir mesaj gönderdi!`,
+        subject: `${senderName} sana bir mesaj gönderdi`,
         html: htmlBody,
       }),
     })
+
+    const resData = await resendResponse.json()
+
+    if (!resendResponse.ok) {
+      console.error('[Email] Resend API e-posta gönderemedi:', resData)
+    } else {
+      console.info('[Email] E-posta bildirimi başarıyla iletildi. Resend ID:', resData.id)
+    }
   } catch (err) {
-    console.error('[sendEmailNotificationIfOffline] Hata:', err)
+    console.error('[sendEmailNotificationIfOffline] Beklenmeyen hata:', err)
   }
 }

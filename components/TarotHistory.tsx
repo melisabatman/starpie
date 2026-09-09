@@ -54,7 +54,12 @@ export default function TarotHistory({ initialReadings, onNewReading }: TarotHis
   if (readings.length === 0) {
     return (
       <div className="tarot-card-box tarot-empty-history">
-        <div className="tarot-empty-icon">📜</div>
+        <div className="tarot-empty-icon">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M12 8v4l3 3"/>
+            <circle cx="12" cy="12" r="9"/>
+          </svg>
+        </div>
         <h3 className="tarot-empty-title">{t('tarot.no_history')}</h3>
         <p className="tarot-empty-sub">
           {t('tarot.no_history_sub')}
@@ -65,7 +70,7 @@ export default function TarotHistory({ initialReadings, onNewReading }: TarotHis
           onClick={onNewReading}
           style={{ width: 'auto', display: 'inline-flex', marginTop: '14px' }}
         >
-          🔮 {t('tarot.new_reading')}
+          {t('tarot.new_reading')}
         </button>
       </div>
     )
@@ -75,7 +80,7 @@ export default function TarotHistory({ initialReadings, onNewReading }: TarotHis
     <div className="tarot-history-container" data-aos="fade-up">
       <div className="tarot-history-header">
         <div>
-          <h3 className="tarot-history-title">📜 {t('tarot.history_tab')}</h3>
+          <h3 className="tarot-history-title">{t('tarot.history_tab')}</h3>
           <p className="tarot-history-sub">
             {t('tarot.history_count', { count: readings.length })}
           </p>
@@ -86,7 +91,7 @@ export default function TarotHistory({ initialReadings, onNewReading }: TarotHis
           onClick={onNewReading}
           style={{ width: 'auto', display: 'inline-flex' }}
         >
-          + {t('tarot.new_reading')} 🔮
+          + {t('tarot.new_reading')}
         </button>
       </div>
 
@@ -98,7 +103,7 @@ export default function TarotHistory({ initialReadings, onNewReading }: TarotHis
               <div className="tarot-history-item-summary" onClick={() => toggleExpand(reading.id)}>
                 <div className="tarot-history-meta">
                   <span className="tarot-history-date">
-                    🗓️ {formatDate(reading.created_at, lang)}
+                    {formatDate(reading.created_at, lang)}
                   </span>
                   <span className="tarot-history-badge">{t('tarot.deck_badge')}</span>
                 </div>
@@ -154,7 +159,7 @@ export default function TarotHistory({ initialReadings, onNewReading }: TarotHis
                 <div className="tarot-history-expanded-content">
                   {/* Synthesis */}
                   <div className="tarot-history-synthesis-box">
-                    <h5 className="tarot-history-box-title">✨ {t('tarot.synthesis_badge')}</h5>
+                    <h5 className="tarot-history-box-title">{t('tarot.synthesis_badge')}</h5>
                     <p className="tarot-history-box-text">{reading.summary}</p>
                   </div>
 

@@ -45,7 +45,7 @@ export default function ProfileCardView({
           setAdminFeedback(res.error || 'İşlem başarısız')
         } else {
           setAdminFeedback(
-            nextState ? 'Kullanıcı banlandı 🚫' : 'Kullanıcının banı kaldırıldı ✨'
+            nextState ? 'Kullanıcı banlandı' : 'Kullanıcının banı kaldırıldı'
           )
         }
       } catch {
@@ -193,7 +193,12 @@ export function ProfileLockedNotice() {
 
   return (
     <div className="posts-locked">
-      <div className="posts-locked__icon">🔒</div>
+      <div className="posts-locked__icon">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+          <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+        </svg>
+      </div>
       <p className="posts-locked__title">{t('profile.posts_locked_title')}</p>
       <p className="posts-locked__sub">{t('profile.posts_locked_sub')}</p>
       <Link
@@ -218,7 +223,12 @@ export function ProfileSuspendedNotice() {
         background: 'rgba(255, 241, 242, 0.8)',
       }}
     >
-      <div className="posts-locked__icon">🚫</div>
+      <div className="posts-locked__icon">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#be123c" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="10"/>
+          <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/>
+        </svg>
+      </div>
       <p className="posts-locked__title" style={{ color: '#be123c' }}>
         {t('admin.banned_badge')}
       </p>

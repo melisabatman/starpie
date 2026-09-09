@@ -9,6 +9,7 @@ import { useLanguage } from '@/components/LanguageProvider'
 interface Props {
   userId: string
   existingProfile?: {
+    username?: string | null
     full_name?: string | null
     profession?: string | null
     bio?: string | null
@@ -19,6 +20,7 @@ interface Props {
 
 export default function ProfileSetupForm({ userId, existingProfile }: Props) {
   const { t, lang } = useLanguage()
+  const [username, setUsername] = useState(existingProfile?.username ?? '')
   const [fullName, setFullName] = useState(existingProfile?.full_name ?? '')
   const [profession, setProfession] = useState(existingProfile?.profession ?? '')
   const [bio, setBio] = useState(existingProfile?.bio ?? '')
@@ -56,6 +58,27 @@ export default function ProfileSetupForm({ userId, existingProfile }: Props) {
       return
     }
 
+    const cleanUsername = username.trim().toLowerCase().replace(/^@/, '')
+    if (cleanUsername) {
+      if (cleanUsername.length < 3 || cleanUsername.length > 30 || !/^[a-zA-Z0-9_]+$/.test(cleanUsername)) {
+        setError(t('auth.username_invalid'))
+        return
+      }
+
+      // Check if another user has this username
+      const { data: existingUser } = await supabase
+        .from('profiles')
+        .select('id')
+        .ilike('username', cleanUsername)
+        .neq('id', userId)
+        .maybeSingle()
+
+      if (existingUser) {
+        setError(t('auth.username_taken'))
+        return
+      }
+    }
+
     setLoading(true)
 
     try {
@@ -86,6 +109,7 @@ export default function ProfileSetupForm({ userId, existingProfile }: Props) {
         .from('profiles')
         .upsert({
           id: userId,
+          username: cleanUsername || null,
           full_name: fullName.trim(),
           profession: profession.trim() || null,
           bio: bio.trim() || null,
@@ -94,7 +118,13 @@ export default function ProfileSetupForm({ userId, existingProfile }: Props) {
           updated_at: new Date().toISOString(),
         })
 
-      if (profileError) throw profileError
+      if (profileError) {
+        if (profileError.message.includes('profiles_username_key') || profileError.message.includes('unique')) {
+          setError(t('auth.username_taken'))
+          return
+        }
+        throw profileError
+      }
 
       router.push(`/profile/${userId}`)
       router.refresh()
@@ -168,6 +198,37 @@ export default function ProfileSetupForm({ userId, existingProfile }: Props) {
           />
         </div>
 
+        {/* Username */}
+        <div className="form-group">
+          <label className="form-label" htmlFor="username">
+            {t('auth.username')}
+          </label>
+          <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+            <span style={{
+              position: 'absolute',
+              left: '14px',
+              color: 'var(--pink-400)',
+              fontWeight: 700,
+              fontSize: '15px',
+              pointerEvents: 'none',
+              userSelect: 'none'
+            }}>@</span>
+            <input
+              id="username"
+              type="text"
+              className="form-input"
+              style={{ paddingLeft: '32px' }}
+              placeholder="kullaniciadi"
+              value={username}
+              onChange={e => setUsername(e.target.value.toLowerCase().replace(/[^a-zA-Z0-9_]/g, ''))}
+              maxLength={30}
+            />
+          </div>
+          <p style={{ fontSize: '11.5px', color: 'var(--gray-400)', marginTop: '4px' }}>
+            {t('auth.username_hint') || 'En az 3 karakter, harf, rakam ve alt çizgi'}
+          </p>
+        </div>
+
         {/* Name */}
         <div className="form-group">
           <label className="form-label" htmlFor="full-name">
@@ -233,7 +294,10 @@ export default function ProfileSetupForm({ userId, existingProfile }: Props) {
           >
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '2px' }}>
-                <span style={{ fontSize: '16px' }}>🔔</span>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                  <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+                </svg>
                 <span style={{ fontSize: '13.5px', fontWeight: 700, color: 'var(--gray-800)' }}>
                   {t('settings.email_notifications_label')}
                 </span>
