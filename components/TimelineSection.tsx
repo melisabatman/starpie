@@ -97,7 +97,7 @@ export default function TimelineSection({
                 width={40}
                 height={40}
                 sizes="40px"
-                style={{ objectFit: 'cover', borderRadius: '50%' }}
+                style={{ objectFit: 'cover', objectPosition: 'center', borderRadius: '50%' }}
               />
             ) : (
               <span>{myInitials}</span>
@@ -260,7 +260,7 @@ export default function TimelineSection({
                           width={42}
                           height={42}
                           sizes="42px"
-                          style={{ objectFit: 'cover', borderRadius: '50%' }}
+                          style={{ objectFit: 'cover', objectPosition: 'center', borderRadius: '50%' }}
                         />
                       ) : (
                         <span>{authorInitials}</span>

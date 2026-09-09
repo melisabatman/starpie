@@ -59,7 +59,7 @@ function PolaroidCard({
               sizes="(max-width: 640px) 90vw, (max-width: 1024px) 45vw, 320px"
               loading="lazy"
               className="polaroid-img"
-              style={{ objectFit: 'cover' }}
+              style={{ objectFit: 'cover', objectPosition: 'center' }}
               unoptimized={memory.image_url.startsWith('blob:')}
             />
           </div>

@@ -169,7 +169,7 @@ export default function ProfileSetupForm({ userId, existingProfile }: Props) {
                   alt={t('profile.add_photo')}
                   fill
                   sizes="120px"
-                  style={{ objectFit: 'cover' }}
+                  style={{ objectFit: 'cover', objectPosition: 'center', borderRadius: '50%' }}
                   unoptimized={avatarPreview.startsWith('blob:')}
                 />
                 <div className="avatar-overlay">

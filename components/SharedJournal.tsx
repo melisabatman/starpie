@@ -265,7 +265,7 @@ export default function SharedJournal({
                 alt="Journal memory"
                 fill
                 sizes="(max-width: 640px) 100vw, 500px"
-                style={{ objectFit: 'cover' }}
+                style={{ objectFit: 'cover', objectPosition: 'center' }}
                 unoptimized
               />
               <button
@@ -441,7 +441,7 @@ export default function SharedJournal({
                       fill
                       sizes="(max-width: 640px) 100vw, 600px"
                       loading="lazy"
-                      style={{ objectFit: 'cover' }}
+                      style={{ objectFit: 'cover', objectPosition: 'center' }}
                     />
                   </div>
                 )}

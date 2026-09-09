@@ -193,7 +193,7 @@ export default function ConversationList({
                         width={50}
                         height={50}
                         sizes="50px"
-                        style={{ objectFit: 'cover', borderRadius: '50%' }}
+                        style={{ objectFit: 'cover', objectPosition: 'center', borderRadius: '50%' }}
                       />
                     ) : (
                       <span className="conv-item__fallback">{initials}</span>
@@ -263,7 +263,7 @@ export default function ConversationList({
                         width={50}
                         height={50}
                         sizes="50px"
-                        style={{ objectFit: 'cover', borderRadius: '50%' }}
+                        style={{ objectFit: 'cover', objectPosition: 'center', borderRadius: '50%' }}
                       />
                     ) : (
                       <span className="conv-item__fallback">{initials}</span>

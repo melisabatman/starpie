@@ -194,7 +194,7 @@ export default function MoodTracker({
                     width={38}
                     height={38}
                     sizes="38px"
-                    style={{ objectFit: 'cover', borderRadius: '50%' }}
+                    style={{ objectFit: 'cover', objectPosition: 'center', borderRadius: '50%' }}
                   />
                 ) : (
                   <span>{myInitials}</span>
@@ -243,7 +243,7 @@ export default function MoodTracker({
                     width={38}
                     height={38}
                     sizes="38px"
-                    style={{ objectFit: 'cover', borderRadius: '50%' }}
+                    style={{ objectFit: 'cover', objectPosition: 'center', borderRadius: '50%' }}
                   />
                 ) : (
                   <span>{partnerInitials}</span>

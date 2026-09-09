@@ -88,7 +88,7 @@ function MiniAvatar({
           width={size}
           height={size}
           sizes={`${size}px`}
-          style={{ objectFit: 'cover', borderRadius: '50%' }}
+          style={{ objectFit: 'cover', objectPosition: 'center', borderRadius: '50%' }}
         />
       ) : (
         <span>{initials}</span>

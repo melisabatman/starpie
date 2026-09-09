@@ -37,7 +37,7 @@ function MiniAvatar({
           width={size}
           height={size}
           sizes={`${size}px`}
-          style={{ objectFit: 'cover', width: '100%', height: '100%', borderRadius: '50%' }}
+          style={{ objectFit: 'cover', objectPosition: 'center', width: '100%', height: '100%', borderRadius: '50%' }}
           unoptimized={avatarUrl.startsWith('blob:')}
         />
       ) : (

@@ -162,7 +162,7 @@ function FeedCreatePostForm({
             alt="Preview"
             fill
             sizes="(max-width: 640px) 100vw, 540px"
-            style={{ objectFit: 'cover' }}
+            style={{ objectFit: 'cover', objectPosition: 'center' }}
             unoptimized
           />
           <button

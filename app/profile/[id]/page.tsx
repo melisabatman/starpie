@@ -95,7 +95,7 @@ export default async function ProfilePage({ params }: Props) {
                     fill
                     sizes="124px"
                     priority
-                    style={{ objectFit: 'cover', borderRadius: '50%' }}
+                    style={{ objectFit: 'cover', objectPosition: 'center', borderRadius: '50%' }}
                   />
                 ) : (
                   <span className="profile-avatar__fallback">{initials}</span>

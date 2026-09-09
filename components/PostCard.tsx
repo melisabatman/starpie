@@ -393,7 +393,7 @@ function PostCard({
             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 680px, 600px"
             loading="lazy"
             className="post-card__img"
-            style={{ objectFit: 'cover' }}
+            style={{ objectFit: 'cover', objectPosition: 'center' }}
           />
         </div>
       )}

@@ -244,7 +244,7 @@ export default function NotificationBell({ userId }: NotificationBellProps) {
                         width={38}
                         height={38}
                         sizes="38px"
-                        style={{ objectFit: 'cover', borderRadius: '50%' }}
+                        style={{ objectFit: 'cover', objectPosition: 'center', borderRadius: '50%' }}
                       />
                     ) : (
                       <div className="nav-notification-avatar-fallback">

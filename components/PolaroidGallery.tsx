@@ -236,7 +236,7 @@ export default function PolaroidGallery({
                       sizes="(max-width: 640px) 100vw, 350px"
                       unoptimized={previewUrl.startsWith('blob:')}
                       className="memory-preview-img"
-                      style={{ objectFit: 'cover' }}
+                      style={{ objectFit: 'cover', objectPosition: 'center' }}
                     />
                     <div className="memory-change-hint">
                       {t('polaroid.change_photo')}

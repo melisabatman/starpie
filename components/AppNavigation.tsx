@@ -358,7 +358,7 @@ export default function AppNavigation() {
                       height={30}
                       sizes="30px"
                       priority
-                      style={{ objectFit: 'cover', borderRadius: '50%' }}
+                      style={{ objectFit: 'cover', objectPosition: 'center', borderRadius: '50%' }}
                     />
                   ) : (
                     <span>{initials}</span>
@@ -410,7 +410,7 @@ export default function AppNavigation() {
                   alt={incomingToast.senderName}
                   width={40}
                   height={40}
-                  style={{ objectFit: 'cover', borderRadius: '50%' }}
+                  style={{ objectFit: 'cover', objectPosition: 'center', borderRadius: '50%' }}
                 />
               ) : (
                 <span>{incomingToast.senderName[0]?.toUpperCase() ?? 'S'}</span>
@@ -511,7 +511,7 @@ export default function AppNavigation() {
                     width={56}
                     height={56}
                     sizes="56px"
-                    style={{ objectFit: 'cover', borderRadius: '50%' }}
+                    style={{ objectFit: 'cover', objectPosition: 'center', borderRadius: '50%' }}
                   />
                 ) : (
                   <span className="drawer-avatar-fallback">{initials}</span>

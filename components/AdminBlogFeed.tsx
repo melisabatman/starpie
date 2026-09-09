@@ -127,7 +127,7 @@ function AdminInlineCreateForm({
                 width={38}
                 height={38}
                 sizes="38px"
-                style={{ objectFit: 'cover', borderRadius: '50%' }}
+                style={{ objectFit: 'cover', objectPosition: 'center', borderRadius: '50%' }}
               />
             ) : (
               <span>{profile?.full_name ? profile.full_name[0].toUpperCase() : 'A'}</span>
@@ -186,11 +186,12 @@ function AdminInlineCreateForm({
       {/* Cover Image Preview */}
       {imagePreview && (
         <div className="admin-blog-cover-preview" style={{ marginBottom: '14px' }}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
+          <Image
             src={imagePreview}
             alt="Seçilen Kapak Görseli"
-            style={{ objectFit: 'cover', width: '100%', height: '100%', display: 'block' }}
+            fill
+            style={{ objectFit: 'cover', objectPosition: 'center' }}
+            unoptimized
           />
           <button
             type="button"
@@ -575,7 +576,7 @@ export default function AdminBlogFeed({
                           fill
                           sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                           loading="lazy"
-                          style={{ objectFit: 'cover' }}
+                          style={{ objectFit: 'cover', objectPosition: 'center' }}
                         />
                       </div>
                     )}
@@ -593,7 +594,7 @@ export default function AdminBlogFeed({
                                 height={32}
                                 sizes="32px"
                                 loading="lazy"
-                                style={{ objectFit: 'cover', borderRadius: '50%' }}
+                                style={{ objectFit: 'cover', objectPosition: 'center', borderRadius: '50%' }}
                               />
                             ) : (
                               <span>{authorInitials}</span>
@@ -718,7 +719,7 @@ export default function AdminBlogFeed({
                       width={44}
                       height={44}
                       sizes="44px"
-                      style={{ objectFit: 'cover', borderRadius: '50%' }}
+                      style={{ objectFit: 'cover', objectPosition: 'center', borderRadius: '50%' }}
                     />
                   ) : (
                     <span>A</span>
@@ -743,7 +744,7 @@ export default function AdminBlogFeed({
                     fill
                     sizes="(max-width: 768px) 100vw, 800px"
                     loading="lazy"
-                    style={{ objectFit: 'cover' }}
+                    style={{ objectFit: 'cover', objectPosition: 'center' }}
                   />
                 </div>
               )}
@@ -866,16 +867,12 @@ export default function AdminBlogFeed({
 
                 {imagePreview && (
                   <div className="admin-blog-cover-preview" style={{ marginBottom: '12px' }}>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
+                    <Image
                       src={imagePreview}
                       alt="Kapak fotoğrafı önizlemesi"
-                      style={{
-                        objectFit: 'cover',
-                        width: '100%',
-                        height: '100%',
-                        display: 'block',
-                      }}
+                      fill
+                      style={{ objectFit: 'cover', objectPosition: 'center' }}
+                      unoptimized
                     />
                     {isUploading ? (
                       <div

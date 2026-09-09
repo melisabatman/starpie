@@ -442,7 +442,7 @@ export default function ChatWindow({
                 width={42}
                 height={42}
                 sizes="42px"
-                style={{ objectFit: 'cover', borderRadius: '50%' }}
+                style={{ objectFit: 'cover', objectPosition: 'center', borderRadius: '50%' }}
               />
             ) : (
               <span className="chat-header__fallback">{partnerInitials}</span>
