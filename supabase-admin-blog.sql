@@ -75,6 +75,37 @@ create policy "Only admin can delete own posts"
   );
 
 -- =============================================
+-- 5. Storage: "admin-posts" Bucket & Politikaları
+-- =============================================
+insert into storage.buckets (id, name, public)
+values ('admin-posts', 'admin-posts', true)
+on conflict (id) do update set public = true;
+
+create policy "Admin blog images are publicly accessible"
+  on storage.objects for select
+  using (bucket_id = 'admin-posts');
+
+create policy "Only admin can upload admin blog images"
+  on storage.objects for insert
+  with check (
+    bucket_id = 'admin-posts'
+    and exists (
+      select 1 from public.profiles
+      where id = auth.uid() and role = 'admin'
+    )
+  );
+
+create policy "Only admin can delete admin blog images"
+  on storage.objects for delete
+  using (
+    bucket_id = 'admin-posts'
+    and exists (
+      select 1 from public.profiles
+      where id = auth.uid() and role = 'admin'
+    )
+  );
+
+-- =============================================
 -- KENDİ HESABINI ADMIN YAPMAK İÇİN:
 -- =============================================
 -- Seçenek A (User ID ile):

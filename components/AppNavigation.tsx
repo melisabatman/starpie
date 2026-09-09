@@ -25,6 +25,13 @@ export default function AppNavigation() {
   const [theme, setTheme] = useState<ThemeMode>('pink')
   const [aboutOpen, setAboutOpen] = useState(false)
   const [isLoggingOut, startLogoutTransition] = useTransition()
+  const [unreadMessagesCount, setUnreadMessagesCount] = useState<number>(0)
+  const [incomingToast, setIncomingToast] = useState<{
+    senderId: string
+    senderName: string
+    senderAvatar: string | null
+    text: string
+  } | null>(null)
 
   // 1. Listen to Auth State and Fetch Profile
   useEffect(() => {
@@ -90,6 +97,74 @@ export default function AppNavigation() {
       clearInterval(interval)
     }
   }, [user?.id])
+
+  // 1c. Realtime Incoming Message Listener & Unread Badge Count
+  useEffect(() => {
+    if (!user?.id) return
+    const supabase = createClient()
+
+    // Fetch initial unread count
+    const fetchUnread = async () => {
+      const { count } = await supabase
+        .from('messages')
+        .select('id', { count: 'exact', head: true })
+        .eq('receiver_id', user.id)
+        .eq('is_read', false)
+      setUnreadMessagesCount(count || 0)
+    }
+    fetchUnread()
+
+    const channel = supabase
+      .channel(`incoming-messages-nav-${user.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'messages',
+          filter: `receiver_id=eq.${user.id}`,
+        },
+        async (payload) => {
+          const newMsg = payload.new as { sender_id: string; content?: string; message_type?: string }
+          setUnreadMessagesCount(prev => prev + 1)
+
+          // Fetch sender profile to display rich toast
+          const { data: senderProf } = await supabase
+            .from('profiles')
+            .select('full_name, avatar_url')
+            .eq('id', newMsg.sender_id)
+            .single()
+
+          const senderName = senderProf?.full_name || (lang === 'tr' ? 'Bir arkadaşın' : 'A friend')
+          const textPreview = newMsg.message_type === 'audio'
+            ? (lang === 'tr' ? '1 yeni sesli mesaj' : '1 new voice message')
+            : (newMsg.content && newMsg.content.length > 50 ? newMsg.content.slice(0, 50) + '...' : newMsg.content || (lang === 'tr' ? 'Yeni bir mesaj' : 'New message'))
+
+          setIncomingToast({
+            senderId: newMsg.sender_id,
+            senderName,
+            senderAvatar: senderProf?.avatar_url ?? null,
+            text: textPreview,
+          })
+
+          setTimeout(() => {
+            setIncomingToast(null)
+          }, 6500)
+        }
+      )
+      .subscribe()
+
+    return () => {
+      channel.unsubscribe()
+    }
+  }, [user?.id, lang])
+
+  // Clear unread count when viewing messages
+  useEffect(() => {
+    if (pathname.startsWith('/messages')) {
+      setUnreadMessagesCount(0)
+    }
+  }, [pathname])
 
   // Close drawer on route change
   useEffect(() => {
@@ -197,6 +272,7 @@ export default function AppNavigation() {
         </svg>
       ),
       active: pathname.startsWith('/messages'),
+      badge: unreadMessagesCount > 0 ? (unreadMessagesCount > 9 ? '9+' : String(unreadMessagesCount)) : null,
     },
     {
       href: '/space',
@@ -247,7 +323,12 @@ export default function AppNavigation() {
                 prefetch={true}
                 className={`app-nav-link ${item.active ? 'app-nav-link--active' : ''}`}
               >
-                <span className="app-nav-link__icon">{item.icon}</span>
+                <span className="app-nav-link__icon" style={{ position: 'relative' }}>
+                  {item.icon}
+                  {'badge' in item && item.badge && (
+                    <span className="nav-unread-badge">{item.badge}</span>
+                  )}
+                </span>
                 <span className="app-nav-link__label">{item.label}</span>
                 {item.active && <span className="app-nav-link__indicator" />}
               </Link>
@@ -313,6 +394,52 @@ export default function AppNavigation() {
       </header>
 
       {/* ──────────────────────────────────────────────────────────── */}
+      {/* LIVE IN-APP MESSAGE TOAST NOTIFICATION */}
+      {/* ──────────────────────────────────────────────────────────── */}
+      {incomingToast && (
+        <div className="in-app-message-toast" role="alert">
+          <div className="toast-inner">
+            <div className="toast-avatar">
+              {incomingToast.senderAvatar ? (
+                <Image
+                  src={incomingToast.senderAvatar}
+                  alt={incomingToast.senderName}
+                  width={40}
+                  height={40}
+                  style={{ objectFit: 'cover', borderRadius: '50%' }}
+                />
+              ) : (
+                <span>{incomingToast.senderName[0]?.toUpperCase() ?? 'S'}</span>
+              )}
+            </div>
+            <div className="toast-content">
+              <div className="toast-title">
+                <span style={{ fontSize: '14px' }}>💬</span>
+                <strong>{incomingToast.senderName}</strong>
+                <span className="toast-label">{lang === 'tr' ? 'sana mesaj gönderdi' : 'sent you a message'}</span>
+              </div>
+              <p className="toast-text">{incomingToast.text}</p>
+            </div>
+            <Link
+              href={`/messages/${incomingToast.senderId}`}
+              className="toast-action-btn"
+              onClick={() => setIncomingToast(null)}
+            >
+              {lang === 'tr' ? 'Gör ve Yanıtla' : 'View & Reply'}
+            </Link>
+            <button
+              type="button"
+              className="toast-close-btn"
+              onClick={() => setIncomingToast(null)}
+              aria-label={t('nav.close')}
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ──────────────────────────────────────────────────────────── */}
       {/* 2. MOBILE FIXED BOTTOM NAVIGATION BAR */}
       {/* ──────────────────────────────────────────────────────────── */}
       <nav className="app-bottom-bar" aria-label="Mobil Ana Menü">
@@ -323,7 +450,12 @@ export default function AppNavigation() {
             prefetch={true}
             className={`app-bottom-item ${item.active ? 'app-bottom-item--active' : ''}`}
           >
-            <span className="app-bottom-item__icon">{item.icon}</span>
+            <span className="app-bottom-item__icon" style={{ position: 'relative' }}>
+              {item.icon}
+              {'badge' in item && item.badge && (
+                <span className="nav-unread-badge">{item.badge}</span>
+              )}
+            </span>
             <span className="app-bottom-item__label">{item.label}</span>
           </Link>
         ))}

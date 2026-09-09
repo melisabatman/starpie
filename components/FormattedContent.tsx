@@ -30,7 +30,7 @@ export default function FormattedContent({
     if (typeof window !== 'undefined') {
       return DOMPurify.sanitize(content, {
         ALLOWED_TAGS: ['p', 'strong', 'b', 'em', 'i', 'u', 'br', 'span'],
-        ALLOWED_ATTR: [],
+        ALLOWED_ATTR: ['style'],
       })
     }
 

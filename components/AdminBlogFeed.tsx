@@ -1,25 +1,261 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState, useTransition, useRef } from 'react'
 import Image from 'next/image'
 import {
   createAdminPost,
   updateAdminPost,
   deleteAdminPost,
+  uploadAdminBlogImage,
 } from '@/lib/actions/blog'
-import type { AdminPost } from '@/lib/types'
+import type { AdminPost, Profile } from '@/lib/types'
 import { useLanguage } from '@/components/LanguageProvider'
 
 interface AdminBlogFeedProps {
   initialPosts: AdminPost[]
   isAdmin: boolean
   currentUserId?: string
+  currentUserProfile?: Profile | null
+}
+
+// ─── Inline Admin Post Creation Form (Matches FeedCreatePostForm Exactly) ──
+function AdminInlineCreateForm({
+  profile,
+  onPostCreated,
+}: {
+  profile?: Profile | null
+  onPostCreated: (post: AdminPost) => void
+}) {
+  const { t, lang } = useLanguage()
+  const [title, setTitle] = useState('')
+  const [excerpt, setExcerpt] = useState('')
+  const [content, setContent] = useState('')
+  const [imageFile, setImageFile] = useState<File | null>(null)
+  const [imagePreview, setImagePreview] = useState<string | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const fileRef = useRef<HTMLInputElement>(null)
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (file.size > 10 * 1024 * 1024) {
+      setError(t('feed.img_size_err') || 'Fotoğraf boyutu 10 MB\'dan küçük olmalıdır.')
+      return
+    }
+    setImageFile(file)
+    setImagePreview(URL.createObjectURL(file))
+    setError(null)
+  }
+
+  const clearImage = () => {
+    setImageFile(null)
+    setImagePreview(null)
+    if (fileRef.current) fileRef.current.value = ''
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    const cleanTitle = title.trim()
+    const cleanContent = content.trim()
+
+    if (!cleanTitle) {
+      setError(lang === 'tr' ? 'Lütfen yazı başlığı girin.' : 'Please enter a title.')
+      return
+    }
+    if (!cleanContent) {
+      setError(lang === 'tr' ? 'Lütfen yazı içeriği girin.' : 'Please enter content.')
+      return
+    }
+
+    setLoading(true)
+    setError(null)
+
+    try {
+      let coverUrl: string | null = null
+
+      if (imageFile) {
+        const formData = new FormData()
+        formData.append('file', imageFile)
+        const uploadRes = await uploadAdminBlogImage(formData)
+        if (!uploadRes.success || !uploadRes.url) {
+          throw new Error(uploadRes.error || (lang === 'tr' ? 'Fotoğraf yüklenemedi.' : 'Failed to upload image.'))
+        }
+        coverUrl = uploadRes.url
+      }
+
+      const res = await createAdminPost(
+        cleanTitle,
+        cleanContent,
+        excerpt.trim() || null,
+        coverUrl
+      )
+
+      if (!res.success || !res.post) {
+        throw new Error(res.error || (lang === 'tr' ? 'Köşe yazısı paylaşılamadı.' : 'Failed to create article.'))
+      }
+
+      setTitle('')
+      setExcerpt('')
+      setContent('')
+      clearImage()
+      onPostCreated(res.post)
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : (lang === 'tr' ? 'Bir hata oluştu.' : 'An error occurred.'))
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <form className="create-post-form" onSubmit={handleSubmit} noValidate data-aos="fade-up" style={{ marginBottom: '28px' }}>
+      {error && (
+        <div className="alert alert--error" role="alert" style={{ marginBottom: '14px' }}>
+          {error}
+        </div>
+      )}
+
+      {/* Author Bar */}
+      <div className="create-post-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <div className="mini-avatar" style={{ width: 38, height: 38, minWidth: 38, fontSize: 14 }}>
+            {profile?.avatar_url ? (
+              <Image
+                src={profile.avatar_url}
+                alt={profile.full_name ?? 'Admin'}
+                width={38}
+                height={38}
+                sizes="38px"
+                style={{ objectFit: 'cover', borderRadius: '50%' }}
+              />
+            ) : (
+              <span>{profile?.full_name ? profile.full_name[0].toUpperCase() : 'A'}</span>
+            )}
+          </div>
+          <div>
+            <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--gray-800)' }}>
+              {profile?.full_name ?? 'Admin'}
+            </div>
+            <div style={{ fontSize: '12px', color: 'var(--pink-600)', fontWeight: 600 }}>
+              {t('blog.admin_corner')}
+            </div>
+          </div>
+        </div>
+
+        <span className="blog-category-badge" style={{ margin: 0 }}>
+          {lang === 'tr' ? 'Yeni Köşe Yazısı' : 'New Article'}
+        </span>
+      </div>
+
+      {/* Title */}
+      <input
+        type="text"
+        className="form-input"
+        placeholder={t('blog.post_title_placeholder') || (lang === 'tr' ? 'Yazı başlığı... *' : 'Article title... *')}
+        value={title}
+        onChange={e => setTitle(e.target.value)}
+        maxLength={200}
+        disabled={loading}
+        style={{ marginBottom: '10px', fontWeight: 700, fontSize: '15px' }}
+      />
+
+      {/* Subtitle / Excerpt */}
+      <input
+        type="text"
+        className="form-input"
+        placeholder={t('blog.subtitle_placeholder') || (lang === 'tr' ? 'Kısa özet veya alt başlık (isteğe bağlı)...' : 'Subtitle or brief summary (optional)...')}
+        value={excerpt}
+        onChange={e => setExcerpt(e.target.value)}
+        maxLength={350}
+        disabled={loading}
+        style={{ marginBottom: '10px', fontSize: '13.5px' }}
+      />
+
+      {/* Content Textarea */}
+      <textarea
+        rows={5}
+        className="form-input form-textarea"
+        placeholder={t('blog.post_content_placeholder') || (lang === 'tr' ? 'Köşe yazınızı buraya yazın... *' : 'Write your editorial article here... *')}
+        value={content}
+        onChange={e => setContent(e.target.value)}
+        disabled={loading}
+        style={{ marginBottom: '12px', resize: 'vertical', minHeight: '110px' }}
+      />
+
+      {/* Cover Image Preview */}
+      {imagePreview && (
+        <div className="create-post-preview" style={{ marginBottom: '14px' }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={imagePreview}
+            alt="Seçilen Kapak Görseli"
+            style={{ objectFit: 'cover', width: '100%', height: 'auto', maxHeight: '280px', borderRadius: '10px', display: 'block' }}
+          />
+          <button
+            type="button"
+            className="create-post-preview__remove"
+            onClick={clearImage}
+            title={t('feed.remove_photo')}
+            aria-label={t('feed.remove_photo')}
+          >
+            ✕
+          </button>
+        </div>
+      )}
+
+      {/* Footer with Camera Button & Submit Button */}
+      <div className="create-post-footer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
+        <button
+          type="button"
+          id="admin-blog-inline-add-photo-btn"
+          className="btn-post-photo-upload"
+          onClick={() => fileRef.current?.click()}
+          disabled={loading}
+          title={imageFile ? t('feed.change_photo') : t('feed.add_photo')}
+          aria-label={imageFile ? t('feed.change_photo') : t('feed.add_photo')}
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+            <circle cx="12" cy="13" r="4"/>
+          </svg>
+          <span>{imageFile ? t('feed.change_photo') : t('feed.add_photo')}</span>
+        </button>
+
+        <input
+          ref={fileRef}
+          id="admin-blog-inline-photo-input"
+          type="file"
+          accept="image/*"
+          onChange={handleImageChange}
+          style={{ display: 'none' }}
+        />
+
+        <button
+          id="admin-blog-inline-submit-btn"
+          type="submit"
+          className="btn btn--primary"
+          style={{ marginTop: 0, width: 'auto', padding: '10px 24px', fontSize: '14px', display: 'inline-flex', alignItems: 'center', gap: '8px' }}
+          disabled={loading || !title.trim() || !content.trim()}
+        >
+          {loading ? (
+            <>
+              <span className="spinner spinner--sm" />
+              <span>{lang === 'tr' ? 'Yayınlanıyor...' : 'Publishing...'}</span>
+            </>
+          ) : (
+            <span>{t('blog.publish_launch') || (lang === 'tr' ? 'Köşe Yazısını Yayınla' : 'Publish Article')}</span>
+          )}
+        </button>
+      </div>
+    </form>
+  )
 }
 
 export default function AdminBlogFeed({
   initialPosts,
   isAdmin,
   currentUserId,
+  currentUserProfile,
 }: AdminBlogFeedProps) {
   const { t, lang } = useLanguage()
   const [posts, setPosts] = useState<AdminPost[]>(initialPosts)
@@ -54,8 +290,12 @@ export default function AdminBlogFeed({
   const [formContent, setFormContent] = useState('')
   const [formExcerpt, setFormExcerpt] = useState('')
   const [formCoverUrl, setFormCoverUrl] = useState('')
+  const [imageFile, setImageFile] = useState<File | null>(null)
+  const [imagePreview, setImagePreview] = useState<string | null>(null)
+  const [isUploading, setIsUploading] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   // Open editor for creating
   const handleOpenCreate = () => {
@@ -64,6 +304,9 @@ export default function AdminBlogFeed({
     setFormContent('')
     setFormExcerpt('')
     setFormCoverUrl('')
+    setImageFile(null)
+    setImagePreview(null)
+    setIsUploading(false)
     setFormError(null)
     setIsEditorOpen(true)
   }
@@ -76,6 +319,9 @@ export default function AdminBlogFeed({
     setFormContent(post.content)
     setFormExcerpt(post.excerpt ?? '')
     setFormCoverUrl(post.cover_image_url ?? '')
+    setImageFile(null)
+    setImagePreview(post.cover_image_url ?? null)
+    setIsUploading(false)
     setFormError(null)
     setIsEditorOpen(true)
   }
@@ -100,6 +346,52 @@ export default function AdminBlogFeed({
     })
   }
 
+  // Image Handlers
+  const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (file.size > 10 * 1024 * 1024) {
+      setFormError(t('feed.img_size_err') || 'Fotoğraf boyutu 10 MB\'dan küçük olmalıdır.')
+      return
+    }
+
+    // Set preview immediately for responsive feedback
+    setImageFile(file)
+    setImagePreview(URL.createObjectURL(file))
+    setFormError(null)
+    setIsUploading(true)
+
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      const res = await uploadAdminBlogImage(formData)
+
+      if (!res.success || !res.url) {
+        throw new Error(res.error || 'Fotoğraf yüklenemedi.')
+      }
+
+      // Automatically store generated URL
+      setFormCoverUrl(res.url)
+      setImagePreview(res.url)
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Fotoğraf yüklenemedi.'
+      setFormError(msg)
+      setImagePreview(null)
+      setImageFile(null)
+      setFormCoverUrl('')
+      if (fileInputRef.current) fileInputRef.current.value = ''
+    } finally {
+      setIsUploading(false)
+    }
+  }
+
+  const handleRemoveImage = () => {
+    setImageFile(null)
+    setImagePreview(null)
+    setFormCoverUrl('')
+    if (fileInputRef.current) fileInputRef.current.value = ''
+  }
+
   // Handle Form Submit
   const handleEditorSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -114,6 +406,8 @@ export default function AdminBlogFeed({
     setFormError(null)
 
     startTransition(async () => {
+      const finalCoverUrl = formCoverUrl.trim() || null
+
       if (editingPost) {
         // Update
         const res = await updateAdminPost(
@@ -121,7 +415,7 @@ export default function AdminBlogFeed({
           cleanTitle,
           cleanContent,
           formExcerpt || null,
-          formCoverUrl || null
+          finalCoverUrl
         )
 
         if (res.success) {
@@ -133,14 +427,14 @@ export default function AdminBlogFeed({
                     title: cleanTitle,
                     content: cleanContent,
                     excerpt: formExcerpt || p.excerpt,
-                    cover_image_url: formCoverUrl || null,
+                    cover_image_url: finalCoverUrl,
                     updated_at: new Date().toISOString(),
                   }
                 : p
             )
           )
           if (readingPost?.id === editingPost.id) {
-            setReadingPost(prev => (prev ? { ...prev, title: cleanTitle, content: cleanContent } : null))
+            setReadingPost(prev => (prev ? { ...prev, title: cleanTitle, content: cleanContent, cover_image_url: finalCoverUrl } : null))
           }
           setIsEditorOpen(false)
         } else {
@@ -152,7 +446,7 @@ export default function AdminBlogFeed({
           cleanTitle,
           cleanContent,
           formExcerpt || null,
-          formCoverUrl || null
+          finalCoverUrl
         )
 
         if (res.success && res.post) {
@@ -190,6 +484,14 @@ export default function AdminBlogFeed({
           </button>
         )}
       </div>
+
+      {/* Admin Inline Create Form (Matches Feed Create Post Form with Photo Upload Button) */}
+      {isAdmin && (
+        <AdminInlineCreateForm
+          profile={currentUserProfile}
+          onPostCreated={(newPost) => setPosts(prev => [newPost, ...prev])}
+        />
+      )}
 
       {/* Empty State */}
       {posts.length === 0 ? (
@@ -519,19 +821,102 @@ export default function AdminBlogFeed({
                 />
               </div>
 
-              {/* Cover Image URL */}
-              <div className="form-group">
-                <label htmlFor="blog-cover" className="form-label">
-                  {t('blog.cover_image')} <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>({lang === 'tr' ? 'isteğe bağlı' : 'optional'})</span>
+              {/* Cover Image Upload (Matching PostsSection Component Exactly) */}
+              <div className="form-group" style={{ marginBottom: '20px' }}>
+                <label className="form-label" style={{ marginBottom: '8px' }}>
+                  {t('blog.cover_image')}
                 </label>
-                <input
-                  id="blog-cover"
-                  type="url"
-                  className="form-input"
-                  placeholder={lang === 'tr' ? 'https://images.unsplash.com/...' : 'https://images.unsplash.com/...'}
-                  value={formCoverUrl}
-                  onChange={e => setFormCoverUrl(e.target.value)}
-                />
+
+                {imagePreview && (
+                  <div className="create-post-preview" style={{ marginBottom: '12px' }}>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={imagePreview}
+                      alt="Kapak fotoğrafı önizlemesi"
+                      style={{
+                        objectFit: 'cover',
+                        width: '100%',
+                        height: 'auto',
+                        maxHeight: '260px',
+                        borderRadius: '10px',
+                        display: 'block',
+                      }}
+                    />
+                    {isUploading ? (
+                      <div
+                        style={{
+                          position: 'absolute',
+                          inset: 0,
+                          background: 'rgba(0, 0, 0, 0.5)',
+                          backdropFilter: 'blur(3px)',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          color: 'white',
+                          gap: '8px',
+                          borderRadius: '10px',
+                          zIndex: 6,
+                        }}
+                      >
+                        <span className="spinner spinner--sm" />
+                        <span style={{ fontSize: '12px', fontWeight: 600 }}>Fotoğraf yükleniyor...</span>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        className="create-post-preview__remove"
+                        onClick={handleRemoveImage}
+                        title={t('feed.remove_photo')}
+                        aria-label={t('feed.remove_photo')}
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </div>
+                )}
+
+                <div>
+                  <button
+                    type="button"
+                    id="blog-add-image-btn"
+                    className="btn-post-photo-upload"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isUploading}
+                    title={imagePreview ? t('feed.change_photo') : t('feed.add_photo')}
+                    aria-label={imagePreview ? t('feed.change_photo') : t('feed.add_photo')}
+                  >
+                    <svg
+                      width="18"
+                      height="18"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2.2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+                      <circle cx="12" cy="13" r="4" />
+                    </svg>
+                    <span>
+                      {isUploading
+                        ? 'Yükleniyor...'
+                        : imagePreview
+                        ? t('feed.change_photo')
+                        : t('feed.add_photo')}
+                    </span>
+                  </button>
+
+                  <input
+                    ref={fileInputRef}
+                    id="blog-image-input"
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp,image/gif"
+                    onChange={handleImageSelect}
+                    style={{ display: 'none' }}
+                  />
+                </div>
               </div>
 
               {/* Actions */}
@@ -540,7 +925,7 @@ export default function AdminBlogFeed({
                   type="button"
                   className="btn btn--secondary"
                   onClick={() => setIsEditorOpen(false)}
-                  disabled={isPending}
+                  disabled={isPending || isUploading}
                   style={{ width: 'auto' }}
                 >
                   {t('common.cancel')}
@@ -549,11 +934,14 @@ export default function AdminBlogFeed({
                 <button
                   type="submit"
                   className="btn btn--primary"
-                  disabled={isPending || !formTitle.trim() || !formContent.trim()}
+                  disabled={isPending || isUploading || !formTitle.trim() || !formContent.trim()}
                   style={{ width: 'auto', minWidth: '130px', display: 'inline-flex' }}
                 >
-                  {isPending ? (
-                    <span className="spinner spinner--sm" />
+                  {isPending || isUploading ? (
+                    <>
+                      <span className="spinner spinner--sm" />
+                      <span>{isUploading ? (lang === 'tr' ? 'Görsel Yükleniyor...' : 'Uploading...') : (lang === 'tr' ? 'Kaydediliyor...' : 'Saving...')}</span>
+                    </>
                   ) : editingPost ? (
                     t('blog.update_btn')
                   ) : (

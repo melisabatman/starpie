@@ -33,27 +33,50 @@ end;
 $$;
 
 -- ─────────────────────────────────────────────
--- 3. E-POSTA BİLDİRİMİ İÇİN 2 FARKLI YÖNTEM
+-- 3. POSTGRESQL TRIGGER (MESSAGES -> EDGE FUNCTION)
 -- ─────────────────────────────────────────────
---
--- YÖNTEM A: Next.js Sunucu Tarafı (Önerilen & En Kolay - CLI/Deploy Gerektirmez)
--- 1. Supabase Dashboard > Project Settings > API bölümünden "service_role" gizli anahtarını kopyalayın.
--- 2. Projenizdeki `.env.local` dosyasına şu satırı ekleyin:
---    SUPABASE_SERVICE_ROLE_KEY=eyJh... (kopyaladığınız service_role anahtarı)
---    RESEND_API_KEY=re_... (Resend API anahtarınız)
--- 3. Starpie mesajlaşma sistemi (lib/actions/messages.ts), alıcı çevrimdışıyken
---    veya son 3 dakikadır aktif değilken otomatik olarak Resend üzerinden e-posta gönderir.
---
--- YÖNTEM B: Supabase Edge Function + Database Webhook
--- 1. Supabase CLI ile Edge Function'ı deploy edin:
---    supabase functions deploy send-message-email
--- 2. Fonksiyona Resend API anahtarını secret olarak tanımlayın:
---    supabase secrets set RESEND_API_KEY=re_your_api_key
--- 3. Supabase Dashboard > Database > Webhooks bölümüne gidin ve webhook ekleyin:
---    - Name: send_message_email_notification
---    - Table: public.messages
---    - Events: INSERT
---    - Type: Supabase Edge Function
---    - Edge Function: send-message-email
---    - HTTP Method: POST
+-- pg_net eklentisi ile Edge Function'a asenkron HTTP POST atan trigger
+create extension if not exists pg_net with schema extensions;
+
+create or replace function public.on_message_inserted_send_email()
+returns trigger
+language plpgsql
+security definer
+as $$
+declare
+  edge_function_url text := 'https://croiubkhigvqlodzhcdv.supabase.co/functions/v1/send-message-email';
+  anon_key text := 'sb_publishable_0ZjNQkba_OhWPPkKseMrXw_soKUGH6z';
+  payload jsonb;
+begin
+  payload := jsonb_build_object(
+    'type', TG_OP,
+    'table', TG_TABLE_NAME,
+    'schema', TG_TABLE_SCHEMA,
+    'record', row_to_json(NEW)
+  );
+
+  perform net.http_post(
+    url := edge_function_url,
+    headers := jsonb_build_object(
+      'Content-Type', 'application/json',
+      'Authorization', 'Bearer ' || anon_key
+    ),
+    body := payload
+  );
+
+  return NEW;
+end;
+$$;
+
+drop trigger if exists on_message_inserted_email_trigger on public.messages;
+
+create trigger on_message_inserted_email_trigger
+  after insert on public.messages
+  for each row
+  execute function public.on_message_inserted_send_email();
+
+-- Doğrulama Sorgusu:
+-- SELECT trigger_name, event_manipulation, event_object_table, action_statement 
+-- FROM information_schema.triggers WHERE event_object_table = 'messages';
 -- =============================================
+

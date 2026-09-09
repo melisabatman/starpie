@@ -52,6 +52,7 @@ export default async function BlogPage() {
           initialPosts={posts}
           isAdmin={isAdmin}
           currentUserId={user.id}
+          currentUserProfile={profile}
         />
       </div>
     </div>

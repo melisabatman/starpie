@@ -162,7 +162,14 @@ export async function sendEmailNotificationIfOffline(message: Message) {
     const resData = await resendResponse.json()
 
     if (!resendResponse.ok) {
-      console.error('[Email] Resend API e-posta gönderemedi:', resData)
+      if (resendResponse.status === 403 && resData?.message?.includes('only send testing emails')) {
+        console.warn(
+          `[Email] ⚠️ Resend Test Kısıtlaması (403): Resend varsayılan 'onboarding@resend.dev' adresiyle yalnızca hesap sahibine (2307071039@stu.istinye.edu.tr) e-posta gönderebilir. '${receiverEmail}' adresine e-posta gitmesi için resend.com/domains adresinden kendi alan adınızı ekleyip doğrulamanız gerekmektedir. Detay:`,
+          resData
+        )
+      } else {
+        console.error('[Email] Resend API e-posta gönderemedi:', resData)
+      }
     } else {
       console.info('[Email] E-posta bildirimi başarıyla iletildi. Resend ID:', resData.id)
     }

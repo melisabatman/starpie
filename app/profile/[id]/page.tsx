@@ -49,7 +49,7 @@ export default async function ProfilePage({ params }: Props) {
     notFound()
   }
 
-  const currentUserProfile = isOwnProfile ? profile : (cProfile || profile)
+  const currentUserProfile = isOwnProfile ? profile : cProfile
   const initials = profile.full_name
     ? profile.full_name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
     : '?'
@@ -99,8 +99,16 @@ export default async function ProfilePage({ params }: Props) {
               </div>
             </div>
 
-            <h1 className="profile-name">
-              {profile.full_name ?? 'İsimsiz Kullanıcı'}
+            <h1 className="profile-name" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px', flexWrap: 'wrap' }}>
+              <span>{profile.full_name ?? 'İsimsiz Kullanıcı'}</span>
+              {profile.role === 'admin' && (
+                <span
+                  className="blog-admin-pill"
+                  style={{ padding: '2px 8px', fontSize: '11px', verticalAlign: 'middle' }}
+                >
+                  ✦ Admin
+                </span>
+              )}
             </h1>
 
             {profile.profession && (

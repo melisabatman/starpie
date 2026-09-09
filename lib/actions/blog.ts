@@ -214,3 +214,69 @@ export async function deleteAdminPost(
 
   return { success: true }
 }
+
+// ────────────────────────────────────────────────────────────
+// UPLOAD ADMIN BLOG IMAGE
+// ────────────────────────────────────────────────────────────
+
+export async function uploadAdminBlogImage(
+  formData: FormData
+): Promise<{ success: boolean; url?: string; error?: string }> {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) {
+    return { success: false, error: 'Giriş yapmanız gerekiyor.' }
+  }
+
+  const isAdmin = await checkIsAdmin()
+  if (!isAdmin) {
+    return { success: false, error: 'Bu işlem için yetkiniz bulunmuyor. Yalnızca adminler görsel yükleyebilir.' }
+  }
+
+  const file = formData.get('file') as File | null
+  if (!file || typeof file === 'string' || !file.size) {
+    return { success: false, error: 'Lütfen geçerli bir görsel dosyası seçin.' }
+  }
+
+  // 10MB limit
+  if (file.size > 10 * 1024 * 1024) {
+    return { success: false, error: 'Görsel boyutu 10 MB\'dan küçük olmalıdır.' }
+  }
+
+  if (!file.type.startsWith('image/')) {
+    return { success: false, error: 'Yalnızca görsel dosyaları (JPEG, PNG, WebP, GIF) yüklenebilir.' }
+  }
+
+  const sanitizedName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_')
+  const filePath = `covers/${Date.now()}-${sanitizedName}`
+
+  // Use service role key if available for rock-solid reliability
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+
+  let storageClient = supabase.storage
+  if (serviceKey && supabaseUrl) {
+    const { createClient: createSupabaseAdmin } = await import('@supabase/supabase-js')
+    const adminClient = createSupabaseAdmin(supabaseUrl, serviceKey)
+    storageClient = adminClient.storage
+  }
+
+  const fileBuffer = await file.arrayBuffer()
+  const { error: uploadError } = await storageClient
+    .from('admin-posts')
+    .upload(filePath, fileBuffer, {
+      contentType: file.type,
+      upsert: true,
+    })
+
+  if (uploadError) {
+    console.error('Error uploading admin blog image:', uploadError)
+    return { success: false, error: 'Fotoğraf yüklenemedi: ' + uploadError.message }
+  }
+
+  const { data: urlData } = storageClient.from('admin-posts').getPublicUrl(filePath)
+  return { success: true, url: urlData.publicUrl }
+}
