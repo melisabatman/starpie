@@ -55,11 +55,11 @@ function PolaroidCard({
             <Image
               src={memory.image_url}
               alt={memory.caption || 'Polaroid Anı'}
-              width={400}
-              height={400}
+              fill
               sizes="(max-width: 640px) 90vw, (max-width: 1024px) 45vw, 320px"
               loading="lazy"
               className="polaroid-img"
+              style={{ objectFit: 'cover' }}
               unoptimized={memory.image_url.startsWith('blob:')}
             />
           </div>

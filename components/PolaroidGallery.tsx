@@ -232,11 +232,11 @@ export default function PolaroidGallery({
                     <Image
                       src={previewUrl}
                       alt="Preview"
-                      width={350}
-                      height={350}
+                      fill
                       sizes="(max-width: 640px) 100vw, 350px"
                       unoptimized={previewUrl.startsWith('blob:')}
                       className="memory-preview-img"
+                      style={{ objectFit: 'cover' }}
                     />
                     <div className="memory-change-hint">
                       {t('polaroid.change_photo')}

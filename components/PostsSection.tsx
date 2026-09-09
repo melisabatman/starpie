@@ -130,10 +130,9 @@ function CreatePostForm({
           <Image
             src={imagePreview}
             alt="Preview"
-            width={540}
-            height={280}
+            fill
             sizes="(max-width: 640px) 100vw, 540px"
-            style={{ objectFit: 'cover', width: '100%', height: 'auto', maxHeight: 280, borderRadius: 10 }}
+            style={{ objectFit: 'cover' }}
             unoptimized
           />
           <button

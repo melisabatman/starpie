@@ -263,10 +263,9 @@ export default function SharedJournal({
               <Image
                 src={imagePreview}
                 alt="Journal memory"
-                width={500}
-                height={300}
+                fill
                 sizes="(max-width: 640px) 100vw, 500px"
-                style={{ objectFit: 'cover', width: '100%', maxHeight: '280px', borderRadius: 'var(--radius-md)' }}
+                style={{ objectFit: 'cover' }}
                 unoptimized
               />
               <button
@@ -439,11 +438,10 @@ export default function SharedJournal({
                     <Image
                       src={entry.image_url}
                       alt={entry.title || 'Journal Photo'}
-                      width={600}
-                      height={400}
+                      fill
                       sizes="(max-width: 640px) 100vw, 600px"
                       loading="lazy"
-                      style={{ objectFit: 'cover', width: '100%', height: 'auto', maxHeight: '420px', borderRadius: 'var(--radius-md)' }}
+                      style={{ objectFit: 'cover' }}
                     />
                   </div>
                 )}

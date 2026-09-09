@@ -184,12 +184,12 @@ function AdminInlineCreateForm({
 
       {/* Cover Image Preview */}
       {imagePreview && (
-        <div className="create-post-preview" style={{ marginBottom: '14px' }}>
+        <div className="admin-blog-cover-preview" style={{ marginBottom: '14px' }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={imagePreview}
             alt="Seçilen Kapak Görseli"
-            style={{ objectFit: 'cover', width: '100%', height: 'auto', maxHeight: '280px', borderRadius: '10px', display: 'block' }}
+            style={{ objectFit: 'cover', width: '100%', height: '100%', display: 'block' }}
           />
           <button
             type="button"
@@ -703,10 +703,10 @@ export default function AdminBlogFeed({
                   <Image
                     src={readingPost.cover_image_url}
                     alt={readingPost.title}
-                    width={800}
-                    height={400}
+                    fill
                     sizes="(max-width: 768px) 100vw, 800px"
-                    style={{ objectFit: 'cover', width: '100%', height: 'auto', borderRadius: '12px' }}
+                    loading="lazy"
+                    style={{ objectFit: 'cover' }}
                   />
                 </div>
               )}
@@ -828,7 +828,7 @@ export default function AdminBlogFeed({
                 </label>
 
                 {imagePreview && (
-                  <div className="create-post-preview" style={{ marginBottom: '12px' }}>
+                  <div className="admin-blog-cover-preview" style={{ marginBottom: '12px' }}>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={imagePreview}
@@ -836,9 +836,7 @@ export default function AdminBlogFeed({
                       style={{
                         objectFit: 'cover',
                         width: '100%',
-                        height: 'auto',
-                        maxHeight: '260px',
-                        borderRadius: '10px',
+                        height: '100%',
                         display: 'block',
                       }}
                     />

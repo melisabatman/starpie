@@ -374,16 +374,11 @@ function PostCard({
           <Image
             src={post.image_url}
             alt="Post Image"
-            width={600}
-            height={400}
+            fill
             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 680px, 600px"
             loading="lazy"
-            style={{
-              objectFit: 'cover',
-              width: '100%',
-              height: 'auto',
-              maxHeight: 380,
-            }}
+            className="post-card__img"
+            style={{ objectFit: 'cover' }}
           />
         </div>
       )}

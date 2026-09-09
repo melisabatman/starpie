@@ -89,9 +89,10 @@ export default async function ProfilePage({ params }: Props) {
                   <Image
                     src={profile.avatar_url}
                     alt={`${profile.full_name ?? 'Profil'} fotoğrafı`}
-                    width={124}
-                    height={124}
-                    style={{ objectFit: 'cover', width: '100%', height: '100%', borderRadius: '50%' }}
+                    fill
+                    sizes="124px"
+                    priority
+                    style={{ objectFit: 'cover', borderRadius: '50%' }}
                   />
                 ) : (
                   <span className="profile-avatar__fallback">{initials}</span>
