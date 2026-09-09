@@ -10,6 +10,7 @@ import {
 } from '@/lib/actions/blog'
 import type { AdminPost, Profile } from '@/lib/types'
 import { useLanguage } from '@/components/LanguageProvider'
+import AdminReportsTab from '@/components/AdminReportsTab'
 
 interface AdminBlogFeedProps {
   initialPosts: AdminPost[]
@@ -282,6 +283,7 @@ export default function AdminBlogFeed({
 
   // Full article reader modal state
   const [readingPost, setReadingPost] = useState<AdminPost | null>(null)
+  const [adminTab, setAdminTab] = useState<'posts' | 'reports'>('posts')
 
   // Create / Edit modal state
   const [isEditorOpen, setIsEditorOpen] = useState(false)
@@ -485,158 +487,193 @@ export default function AdminBlogFeed({
         )}
       </div>
 
-      {/* Admin Inline Create Form (Matches Feed Create Post Form with Photo Upload Button) */}
+      {/* Admin Nav Tabs */}
       {isAdmin && (
-        <AdminInlineCreateForm
-          profile={currentUserProfile}
-          onPostCreated={(newPost) => setPosts(prev => [newPost, ...prev])}
-        />
+        <div style={{ display: 'flex', gap: 10, marginBottom: 24 }} data-aos="fade-up">
+          <button
+            type="button"
+            className={`btn ${adminTab === 'posts' ? 'btn--primary' : 'btn--secondary'}`}
+            style={{ width: 'auto', display: 'inline-flex', padding: '8px 20px', fontSize: '13.5px' }}
+            onClick={() => setAdminTab('posts')}
+          >
+            <span>✍️ {lang === 'tr' ? 'Köşe Yazıları' : 'Articles'}</span>
+          </button>
+          <button
+            type="button"
+            className={`btn ${adminTab === 'reports' ? 'btn--primary' : 'btn--secondary'}`}
+            style={{ width: 'auto', display: 'inline-flex', padding: '8px 20px', fontSize: '13.5px' }}
+            onClick={() => setAdminTab('reports')}
+          >
+            <span>🚩 {lang === 'tr' ? 'Şikayetler & Moderasyon' : 'Reports & Moderation'}</span>
+          </button>
+        </div>
       )}
 
-      {/* Empty State */}
-      {posts.length === 0 ? (
-        <div className="blog-card-box blog-empty-state">
-          <div className="blog-empty-icon">
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
-              <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
-            </svg>
-          </div>
-          <h3 className="blog-empty-title">{t('blog.empty')}</h3>
-          <p className="blog-empty-sub">{t('blog.empty_sub')}</p>
-          {isAdmin && (
-            <button
-              type="button"
-              className="btn btn--primary"
-              onClick={handleOpenCreate}
-              style={{ width: 'auto', display: 'inline-flex', marginTop: '14px' }}
-            >
-              {t('blog.first_post_btn')}
-            </button>
-          )}
-        </div>
+      {adminTab === 'reports' ? (
+        <AdminReportsTab />
       ) : (
-        /* Articles List */
-        <div className="blog-posts-grid">
-          {posts.map(post => {
-            const author = post.author
-            const authorInitials = author?.full_name
-              ? author.full_name
-                  .split(' ')
-                  .map(n => n[0])
-                  .join('')
-                  .toUpperCase()
-                  .slice(0, 2)
-              : 'A'
+        <>
+          {/* Admin Inline Create Form (Matches Feed Create Post Form with Photo Upload Button) */}
+          {isAdmin && (
+            <AdminInlineCreateForm
+              profile={currentUserProfile}
+              onPostCreated={(newPost) => setPosts(prev => [newPost, ...prev])}
+            />
+          )}
 
-            const readTime = calculateReadingTime(post.content)
+          {/* Empty State */}
+          {posts.length === 0 ? (
+            <div className="blog-card-box blog-empty-state">
+              <div className="blog-empty-icon">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+                  <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+                </svg>
+              </div>
+              <h3 className="blog-empty-title">{t('blog.empty')}</h3>
+              <p className="blog-empty-sub">{t('blog.empty_sub')}</p>
+              {isAdmin && (
+                <button
+                  type="button"
+                  className="btn btn--primary"
+                  onClick={handleOpenCreate}
+                  style={{ width: 'auto', display: 'inline-flex', marginTop: '14px' }}
+                >
+                  {t('blog.first_post_btn')}
+                </button>
+              )}
+            </div>
+          ) : (
+            /* Articles List */
+            <div className="blog-posts-grid">
+              {posts.map(post => {
+                const author = post.author
+                const authorInitials = author?.full_name
+                  ? author.full_name
+                      .split(' ')
+                      .map(n => n[0])
+                      .join('')
+                      .toUpperCase()
+                      .slice(0, 2)
+                  : 'A'
 
-            return (
-              <article
-                key={post.id}
-                className="blog-post-card"
-                data-aos="fade-up"
-                onClick={() => setReadingPost(post)}
-              >
-                {/* Optional Cover Image */}
-                {post.cover_image_url && (
-                  <div className="blog-card-cover">
-                    <Image
-                      src={post.cover_image_url}
-                      alt={post.title}
-                      fill
-                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                      loading="lazy"
-                      style={{ objectFit: 'cover' }}
-                    />
-                  </div>
-                )}
+                const readTime = calculateReadingTime(post.content)
 
-                <div className="blog-card-body">
-                  {/* Meta Bar */}
-                  <div className="blog-card-meta">
-                    <div className="blog-author-badge">
-                      <div className="blog-author-avatar">
-                        {author?.avatar_url ? (
-                          <Image
-                            src={author.avatar_url}
-                            alt={author.full_name ?? 'Yazar'}
-                            width={32}
-                            height={32}
-                            sizes="32px"
-                            loading="lazy"
-                            style={{ objectFit: 'cover', borderRadius: '50%' }}
-                          />
-                        ) : (
-                          <span>{authorInitials}</span>
-                        )}
-                      </div>
-                      <div className="blog-author-info">
-                        <span className="blog-author-name">
-                          {author?.full_name ?? 'Admin'}
-                        </span>
-                        <span className="blog-admin-pill">{t('blog.author_pill')}</span>
-                      </div>
-                    </div>
-
-                    <div className="blog-card-date-info">
-                      <span>{formatDate(post.created_at)}</span>
-                      <span>·</span>
-                      <span>{readTime}</span>
-                    </div>
-                  </div>
-
-                  {/* Title & Excerpt */}
-                  <h3 className="blog-card-title">{post.title}</h3>
-                  <p className="blog-card-excerpt">
-                    {post.excerpt || post.content.slice(0, 180) + '...'}
-                  </p>
-
-                  {/* Card Footer */}
-                  <div className="blog-card-footer">
-                    <span className="blog-read-more">
-                      {t('blog.read_more')} →
-                    </span>
-
-                    {/* Admin Edit/Delete buttons (ONLY visible to Admin) */}
-                    {isAdmin && (
-                      <div className="blog-admin-actions" onClick={e => e.stopPropagation()}>
-                        <button
-                          type="button"
-                          className="blog-btn-icon blog-btn-edit"
-                          onClick={e => handleOpenEdit(post, e)}
-                          title={t('blog.edit_tooltip')}
-                        >
-                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                          </svg>
-                        </button>
-
-                        <button
-                          type="button"
-                          className="blog-btn-icon blog-btn-delete"
-                          disabled={deletingId === post.id || isPending}
-                          onClick={e => handleDelete(post.id, e)}
-                          title={t('blog.delete_tooltip')}
-                        >
-                          {deletingId === post.id ? (
-                            <span className="spinner spinner--sm" />
-                          ) : (
-                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                              <polyline points="3 6 5 6 21 6" />
-                              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                            </svg>
-                          )}
-                        </button>
+                return (
+                  <article
+                    key={post.id}
+                    className="blog-post-card"
+                    data-aos="fade-up"
+                    onClick={() => setReadingPost(post)}
+                  >
+                    {/* Optional Cover Image */}
+                    {post.cover_image_url && (
+                      <div className="blog-card-cover">
+                        <Image
+                          src={post.cover_image_url}
+                          alt={post.title}
+                          fill
+                          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                          loading="lazy"
+                          style={{ objectFit: 'cover' }}
+                        />
                       </div>
                     )}
-                  </div>
-                </div>
-              </article>
-            )
-          })}
-        </div>
+
+                    <div className="blog-card-body">
+                      {/* Meta Bar */}
+                      <div className="blog-card-meta">
+                        <div className="blog-author-badge">
+                          <div className="blog-author-avatar">
+                            {author?.avatar_url ? (
+                              <Image
+                                src={author.avatar_url}
+                                alt={author.full_name ?? 'Yazar'}
+                                width={32}
+                                height={32}
+                                sizes="32px"
+                                loading="lazy"
+                                style={{ objectFit: 'cover', borderRadius: '50%' }}
+                              />
+                            ) : (
+                              <span>{authorInitials}</span>
+                            )}
+                          </div>
+                          <div className="blog-author-info">
+                            <span className="blog-author-name">
+                              {author?.full_name ?? 'Admin'}
+                            </span>
+                            <span className="blog-admin-pill">{t('blog.author_pill')}</span>
+                          </div>
+                        </div>
+
+                        <div className="blog-card-time-group">
+                          <span className="blog-read-time">{readTime}</span>
+                          <time className="blog-card-date">
+                            {formatDate(post.created_at)}
+                          </time>
+                        </div>
+                      </div>
+
+                      {/* Content */}
+                      <h3 className="blog-card-title">{post.title}</h3>
+                      <p className="blog-card-excerpt">
+                        {post.excerpt || post.content.replace(/<[^>]+>/g, '').slice(0, 140) + '...'}
+                      </p>
+
+                      {/* Bottom Footer */}
+                      <div className="blog-card-footer">
+                        <span className="blog-read-more">
+                          {t('blog.read_more')}
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M5 12h14" />
+                            <path d="M12 5l7 7-7 7" />
+                          </svg>
+                        </span>
+
+                        {/* Admin Inline Actions */}
+                        {isAdmin && (
+                          <div className="blog-card-actions">
+                            <button
+                              type="button"
+                              className="blog-action-btn"
+                              onClick={(e) => handleOpenEdit(post, e)}
+                              title={t('blog.edit_title')}
+                              aria-label={t('blog.edit_title')}
+                            >
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                              </svg>
+                            </button>
+
+                            <button
+                              type="button"
+                              className="blog-action-btn blog-action-btn--delete"
+                              onClick={(e) => handleDelete(post.id, e)}
+                              disabled={deletingId === post.id}
+                              title={t('blog.delete_post_btn')}
+                              aria-label={t('blog.delete_post_btn')}
+                            >
+                              {deletingId === post.id ? (
+                                <span className="spinner spinner--sm" />
+                              ) : (
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                  <polyline points="3 6 5 6 21 6" />
+                                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                                </svg>
+                              )}
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </article>
+                )
+              })}
+            </div>
+          )}
+        </>
       )}
 
       {/* ──────────────────────────────────────────────────────────── */}

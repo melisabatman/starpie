@@ -3,6 +3,8 @@
 import { createClient } from '@/lib/supabase/server'
 import { getCachedUser, getCachedFriendship } from '@/lib/supabase/cached'
 import { revalidatePath } from 'next/cache'
+import { isUserBlocked } from '@/lib/actions/moderation'
+import { createNotification } from '@/lib/actions/notifications'
 import type { FriendRequest, Friend, SearchUser } from '@/lib/types'
 
 // ────────────────────────────────────────────────────────────
@@ -62,6 +64,12 @@ export async function sendFriendRequest(
   } = await supabase.auth.getUser()
   if (!user) return { success: false, error: 'Giriş yapılmamış' }
 
+  // Check if either user has blocked the other
+  const { isBlocked, isBlockedByTarget } = await isUserBlocked(receiverId)
+  if (isBlocked || isBlockedByTarget) {
+    return { success: false, error: 'Bu kullanıcıya arkadaşlık isteği gönderemezsiniz.' }
+  }
+
   const { data, error } = await supabase
     .from('friendships')
     .insert({ sender_id: user.id, receiver_id: receiverId, status: 'pending' })
@@ -69,6 +77,14 @@ export async function sendFriendRequest(
     .single()
 
   if (error) return { success: false, error: error.message }
+
+  // Create notification for receiver
+  await createNotification({
+    userId: receiverId,
+    type: 'friend_request',
+    entityId: data.id,
+  })
+
   revalidatePath('/friends')
   return { success: true, friendship_id: data.id }
 }
@@ -87,6 +103,17 @@ export async function respondToRequest(
   } = await supabase.auth.getUser()
   if (!user) return { success: false, error: 'Giriş yapılmamış' }
 
+  // If accepting, fetch sender_id to notify them
+  let senderId: string | null = null
+  if (status === 'accepted') {
+    const { data: fr } = await supabase
+      .from('friendships')
+      .select('sender_id')
+      .eq('id', requestId)
+      .single()
+    senderId = fr?.sender_id || null
+  }
+
   const { error } = await supabase
     .from('friendships')
     .update({ status, updated_at: new Date().toISOString() })
@@ -94,6 +121,15 @@ export async function respondToRequest(
     .eq('receiver_id', user.id) // only receiver can respond
 
   if (error) return { success: false, error: error.message }
+
+  if (status === 'accepted' && senderId) {
+    await createNotification({
+      userId: senderId,
+      type: 'friend_accept',
+      entityId: requestId,
+    })
+  }
+
   revalidatePath('/friends')
   return { success: true }
 }

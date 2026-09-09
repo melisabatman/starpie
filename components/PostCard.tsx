@@ -14,6 +14,7 @@ import {
 } from '@/lib/actions/posts'
 import { useLanguage } from '@/components/LanguageProvider'
 import FormattedContent from '@/components/FormattedContent'
+import ModerationMenu from '@/components/ModerationMenu'
 import type { RichTextEditorRef } from '@/components/RichTextEditor'
 import type { FeedPost, PostComment, Profile } from '@/lib/types'
 
@@ -333,36 +334,50 @@ function PostCard({
           </div>
         </Link>
 
-        {canDeletePost && (
-          <button
-            className={`post-delete-btn ${isAdmin && !isOwner ? 'post-delete-btn--admin' : ''}`}
-            onClick={handleDeletePost}
-            disabled={isDeleting}
-            title={isAdmin && !isOwner ? t('admin.delete_post') : t('feed.delete_btn')}
-            aria-label={isAdmin && !isOwner ? t('admin.delete_post') : t('feed.delete_btn')}
-          >
-            {isDeleting ? (
-              <span className="spinner spinner--sm" />
-            ) : (
-              <svg
-                width="14"
-                height="14"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <polyline points="3 6 5 6 21 6" />
-                <path d="M19 6l-1 14H6L5 6" />
-                <path d="M10 11v6" />
-                <path d="M14 11v6" />
-                <path d="M9 6V4h6v2" />
-              </svg>
-            )}
-          </button>
-        )}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+          {!isOwner && (
+            <ModerationMenu
+              targetType="post"
+              targetId={post.id}
+              reportedUserId={post.user_id}
+              targetName={author?.full_name || undefined}
+              onBlocked={() => {
+                if (onDelete) onDelete(post.id)
+              }}
+            />
+          )}
+
+          {canDeletePost && (
+            <button
+              className={`post-delete-btn ${isAdmin && !isOwner ? 'post-delete-btn--admin' : ''}`}
+              onClick={handleDeletePost}
+              disabled={isDeleting}
+              title={isAdmin && !isOwner ? t('admin.delete_post') : t('feed.delete_btn')}
+              aria-label={isAdmin && !isOwner ? t('admin.delete_post') : t('feed.delete_btn')}
+            >
+              {isDeleting ? (
+                <span className="spinner spinner--sm" />
+              ) : (
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <polyline points="3 6 5 6 21 6" />
+                  <path d="M19 6l-1 14H6L5 6" />
+                  <path d="M10 11v6" />
+                  <path d="M14 11v6" />
+                  <path d="M9 6V4h6v2" />
+                </svg>
+              )}
+            </button>
+          )}
+        </div>
       </div>
 
       {/* ── Post Content ── */}

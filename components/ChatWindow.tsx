@@ -72,6 +72,10 @@ export default function ChatWindow({
   const [isSending, setIsSending] = useState(false)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const [mounted, setMounted] = useState(false)
+  const [isPartnerTyping, setIsPartnerTyping] = useState(false)
+  const channelRef = useRef<any>(null)
+  const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const lastBroadcastRef = useRef<number>(0)
 
   useEffect(() => {
     setMounted(true)
@@ -163,12 +167,43 @@ export default function ChatWindow({
           )
         }
       )
+      .on(
+        'broadcast',
+        { event: 'typing' },
+        payload => {
+          if (payload.payload?.senderId === partner.id) {
+            setIsPartnerTyping(true)
+            scrollToBottom('smooth')
+            if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current)
+            typingTimeoutRef.current = setTimeout(() => {
+              setIsPartnerTyping(false)
+            }, 2500)
+          }
+        }
+      )
       .subscribe()
 
+    channelRef.current = channel
+
     return () => {
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current)
       supabase.removeChannel(channel)
     }
   }, [currentUserId, partner.id])
+
+  // ── Handle Input Typing Broadcast ──
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setInputText(e.target.value)
+    const now = Date.now()
+    if (now - lastBroadcastRef.current > 1200) {
+      lastBroadcastRef.current = now
+      channelRef.current?.send({
+        type: 'broadcast',
+        event: 'typing',
+        payload: { senderId: currentUserId },
+      })
+    }
+  }
 
   // ── Send Text Message ──
   const handleSend = async (e?: React.FormEvent) => {
@@ -550,6 +585,20 @@ export default function ChatWindow({
             )
           })
         )}
+        {isPartnerTyping && (
+          <div className="chat-typing-row" data-aos="fade-up">
+            <div className="chat-typing-bubble">
+              <span className="chat-typing-text">
+                {partner.full_name?.split(' ')[0] ?? t('mood.partner')} {lang === 'tr' ? 'yazıyor' : 'is typing'}
+              </span>
+              <div className="typing-dots">
+                <span className="typing-dot" />
+                <span className="typing-dot" />
+                <span className="typing-dot" />
+              </div>
+            </div>
+          </div>
+        )}
         <div ref={messagesEndRef} />
       </div>
 
@@ -598,7 +647,7 @@ export default function ChatWindow({
             className="chat-input-field"
             placeholder={t('messages.type_placeholder')}
             value={inputText}
-            onChange={e => setInputText(e.target.value)}
+            onChange={handleInputChange}
             maxLength={2000}
             autoComplete="off"
             disabled={isSending || isUploadingVoice}

@@ -132,6 +132,15 @@ export async function createTimelinePost(
     author: profile ?? null,
   }
 
+  if (wallUserId !== user.id) {
+    const { createNotification } = await import('@/lib/actions/notifications')
+    await createNotification({
+      userId: wallUserId,
+      type: 'timeline_post',
+      content: cleanContent.slice(0, 80),
+    })
+  }
+
   revalidatePath(`/profile/${wallUserId}`)
   return { success: true, post: timelinePost }
 }

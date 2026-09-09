@@ -4,6 +4,8 @@ import { createClient } from '@/lib/supabase/server'
 import { getCachedUser } from '@/lib/supabase/cached'
 import { revalidatePath } from 'next/cache'
 import { checkFriendship } from '@/lib/actions/friends'
+import { isUserBlocked, getBlockedUserIds } from '@/lib/actions/moderation'
+import { createNotification } from '@/lib/actions/notifications'
 import { sendEmailNotificationIfOffline } from '@/lib/email'
 import type { Message, Conversation, Profile } from '@/lib/types'
 
@@ -28,10 +30,13 @@ export async function getConversations(): Promise<Conversation[]> {
     return []
   }
 
-  // Extract friend IDs
-  const friendIds = friendships.map(f =>
-    f.sender_id === user.id ? f.receiver_id : f.sender_id
-  )
+  // Extract friend IDs excluding blocked users
+  const blockedIds = await getBlockedUserIds()
+  const friendIds = friendships
+    .map(f => (f.sender_id === user.id ? f.receiver_id : f.sender_id))
+    .filter(id => !blockedIds.includes(id))
+
+  if (friendIds.length === 0) return []
 
   // 2 & 3. Concurrently fetch profiles of friends and recent messages involving user
   const [profilesRes, messagesRes] = await Promise.all([
@@ -166,6 +171,12 @@ export async function sendMessage(
     return { success: false, error: 'Hesabınız askıya alınmıştır. Mesaj gönderemezsiniz.' }
   }
 
+  // Check if either user has blocked the other
+  const { isBlocked, isBlockedByTarget } = await isUserBlocked(receiverId)
+  if (isBlocked || isBlockedByTarget) {
+    return { success: false, error: 'Bu kullanıcıya mesaj gönderemezsiniz.' }
+  }
+
   // Security check: Must be accepted friends
   const isFriend = await checkFriendship(receiverId)
   if (!isFriend) {
@@ -195,6 +206,14 @@ export async function sendMessage(
 
   revalidatePath('/messages')
   revalidatePath(`/messages/${receiverId}`)
+
+  // Create in-app notification
+  createNotification({
+    userId: receiverId,
+    type: 'new_message',
+    entityId: receiverId,
+    content: messageType === 'audio' ? 'Sesli bir mesaj gönderdi' : (content?.slice(0, 60) || null),
+  }).catch(() => {})
 
   // Asynchronously trigger offline email notification (non-blocking)
   sendEmailNotificationIfOffline(data as Message).catch(err => {

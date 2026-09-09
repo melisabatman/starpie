@@ -3,12 +3,13 @@ import Image from 'next/image'
 import Link from 'next/link'
 import type { Metadata } from 'next'
 import { getCachedUser, getCachedProfile, getCachedCurrentProfile } from '@/lib/supabase/cached'
-import ProfileCardView, { ProfileFooterNotice, ProfileSuspendedNotice } from '@/components/ProfileCardView'
+import ProfileCardView, { ProfileFooterNotice, ProfileSuspendedNotice, ProfileBlockedNotice } from '@/components/ProfileCardView'
 import ProfileContentTabs from '@/components/ProfileContentTabs'
 import PageHeader from '@/components/PageHeader'
 import { getFriends, checkFriendship } from '@/lib/actions/friends'
 import { getProfilePosts } from '@/lib/actions/posts'
 import { getTimelinePosts } from '@/lib/actions/timeline'
+import { isUserBlocked } from '@/lib/actions/moderation'
 import type { Profile, FeedPost, TimelinePost } from '@/lib/types'
 
 interface Props {
@@ -37,11 +38,12 @@ export default async function ProfilePage({ params }: Props) {
 
   const isOwnProfile = user.id === id
 
-  // Fetch target profile, current user profile (if viewing another profile), and friendship check concurrently
-  const [profile, cProfile, isFriendsWith] = await Promise.all([
+  // Fetch target profile, current user profile, friendship check, and block status concurrently
+  const [profile, cProfile, isFriendsWith, blockStatus] = await Promise.all([
     getCachedProfile(id),
     isOwnProfile ? Promise.resolve(null) : getCachedCurrentProfile(),
     isOwnProfile ? Promise.resolve(true) : checkFriendship(id),
+    isOwnProfile ? Promise.resolve({ blocked: false, blockedByMe: false }) : isUserBlocked(id),
   ])
 
   if (!profile) {
@@ -54,11 +56,12 @@ export default async function ProfilePage({ params }: Props) {
     ? profile.full_name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
     : '?'
 
-  // Fetch friends (if own profile) and posts / timeline in parallel
+  // Fetch friends (if own profile) and posts / timeline in parallel (only if not blocked)
+  const canViewContent = !blockStatus.blocked && (isOwnProfile || isFriendsWith)
   const [friends, posts, timelinePosts]: [any[], FeedPost[], TimelinePost[]] = await Promise.all([
     isOwnProfile ? getFriends() : Promise.resolve([]),
-    isFriendsWith ? getProfilePosts(id) : Promise.resolve([]),
-    isFriendsWith ? getTimelinePosts(id) : Promise.resolve([]),
+    canViewContent && !isOwnProfile ? getProfilePosts(id) : Promise.resolve([]),
+    canViewContent && !isOwnProfile ? getTimelinePosts(id) : Promise.resolve([]),
   ])
 
   return (
@@ -126,9 +129,11 @@ export default async function ProfilePage({ params }: Props) {
           />
         </div>
 
-        {/* ── Posts & Timeline Section or Suspended Notice ── */}
+        {/* ── Posts & Timeline Section or Blocked / Suspended Notice ── */}
         <div style={{ marginTop: '24px' }} data-aos="fade-up" data-aos-delay="100">
-          {profile.is_banned && currentUserProfile?.role !== 'admin' ? (
+          {blockStatus.blocked ? (
+            <ProfileBlockedNotice targetUserId={id} blockedByMe={blockStatus.blockedByMe} />
+          ) : profile.is_banned && currentUserProfile?.role !== 'admin' ? (
             <ProfileSuspendedNotice />
           ) : (
             <>

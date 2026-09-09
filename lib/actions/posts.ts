@@ -4,6 +4,8 @@ import { createClient } from '@/lib/supabase/server'
 import { getCachedUser } from '@/lib/supabase/cached'
 import { revalidatePath } from 'next/cache'
 import { checkFriendship } from '@/lib/actions/friends'
+import { getBlockedUserIds } from '@/lib/actions/moderation'
+import { createNotification } from '@/lib/actions/notifications'
 import type { Post, FeedPost, PostComment } from '@/lib/types'
 
 // ────────────────────────────────────────────────────────────
@@ -194,14 +196,22 @@ export async function getFeedPosts(limit: number = 20, offset: number = 0): Prom
     })
   })
 
+  // Filter out blocked users
+  const blockedIds = await getBlockedUserIds()
+  const blockedSet = new Set(blockedIds)
+
+  const filteredFeedItems = feedItems.filter(
+    item => !blockedSet.has(item.user_id) && (!item.repost || !blockedSet.has(item.repost.user_id))
+  )
+
   // Sort by feed_timestamp descending
-  feedItems.sort(
+  filteredFeedItems.sort(
     (a, b) =>
       new Date(b.feed_timestamp || b.created_at).getTime() -
       new Date(a.feed_timestamp || a.created_at).getTime()
   )
 
-  return feedItems.slice(0, limit)
+  return filteredFeedItems.slice(0, limit)
 }
 
 // ────────────────────────────────────────────────────────────
@@ -213,6 +223,11 @@ export async function getProfilePosts(
   limit: number = 20,
   offset: number = 0
 ): Promise<FeedPost[]> {
+  const blockedIds = await getBlockedUserIds()
+  if (blockedIds.includes(targetUserId)) {
+    return []
+  }
+
   const user = await getCachedUser()
   if (!user) return []
 
@@ -375,7 +390,7 @@ export async function getProfilePosts(
 // Backwards compatibility
 export async function getPostsByUser(userId: string): Promise<Post[]> {
   const posts = await getProfilePosts(userId)
-  return posts
+  return posts as unknown as Post[]
 }
 
 // ────────────────────────────────────────────────────────────
@@ -453,6 +468,14 @@ export async function toggleLikePost(
     .from('post_likes')
     .select('id', { count: 'exact', head: true })
     .eq('post_id', postId)
+
+  if (liked && post.user_id !== user.id) {
+    await createNotification({
+      userId: post.user_id,
+      type: 'post_like',
+      entityId: postId,
+    })
+  }
 
   revalidatePath('/feed')
   revalidatePath(`/profile/${post.user_id}`)
@@ -630,6 +653,15 @@ export async function addPostComment(
     .single()
 
   if (error) return { success: false, error: error.message }
+
+  if (post.user_id !== user.id) {
+    await createNotification({
+      userId: post.user_id,
+      type: 'post_comment',
+      entityId: postId,
+      content: plainText.slice(0, 80),
+    })
+  }
 
   const newComment: PostComment = {
     ...(data as PostComment),

@@ -7,6 +7,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { useLanguage } from '@/components/LanguageProvider'
 import NotificationToggle from '@/components/NotificationToggle'
+import NotificationBell from '@/components/NotificationBell'
 import BannedScreen from '@/components/BannedScreen'
 import { usePresence } from '@/lib/hooks/usePresence'
 import { updatePresence } from '@/lib/actions/messages'
@@ -335,8 +336,11 @@ export default function AppNavigation() {
             ))}
           </nav>
 
-          {/* Right Action Area: Profile Chip & Hamburger Button */}
+          {/* Right Action Area: Notification Bell, Profile Chip & Hamburger Button */}
           <div className="app-topbar__actions">
+            {/* In-App Notification Bell */}
+            {userId && <NotificationBell userId={userId} />}
+
             {/* Desktop Quick User Profile Link */}
             {userId && (
               <Link

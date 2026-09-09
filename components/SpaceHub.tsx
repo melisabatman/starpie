@@ -56,6 +56,8 @@ interface SpaceHubProps {
   initialJournalEntries: JournalEntry[]
 }
 
+import { exportMemoryBookPDF } from '@/lib/pdf/exportMemoryBook'
+
 function MiniAvatar({
   avatarUrl,
   name,
@@ -130,6 +132,7 @@ export default function SpaceHub({
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
 
   const [activeTab, setActiveTab] = useState<'polaroids' | 'mood' | 'calendar' | 'journal'>('polaroids')
+  const [isExportingPdf, setIsExportingPdf] = useState(false)
 
   const handleRespond = (spaceId: string, status: 'accepted' | 'rejected') => {
     setLoadingId(spaceId)
@@ -204,6 +207,32 @@ export default function SpaceHub({
           </div>
         )}
 
+        {/* Relationship Days Counter Card */}
+        <div className="space-days-counter-card" data-aos="fade-up">
+          <div className="space-days-counter-badge">
+            <span className="space-days-counter-heart">💕</span>
+            <span>{lang === 'tr' ? 'Birlikte Geçen Süre' : 'Days Together'}</span>
+          </div>
+          <div className="space-days-counter-main">
+            <div className="space-days-counter-digits">
+              <span className="space-days-counter-number">{days}</span>
+              <span className="space-days-counter-unit">
+                {lang === 'tr' ? 'gündür birliktesiniz' : 'days together'}
+              </span>
+            </div>
+            <div className="space-days-counter-date">
+              <span>{lang === 'tr' ? 'Başlangıç Tarihi:' : 'Since:'}</span>{' '}
+              <strong>
+                {new Date(activeSpace.created_at).toLocaleDateString(lang === 'tr' ? 'tr-TR' : 'en-US', {
+                  day: 'numeric',
+                  month: 'long',
+                  year: 'numeric',
+                })}
+              </strong>
+            </div>
+          </div>
+        </div>
+
         {/* Partner Connection Banner */}
         <div className="space-banner" data-aos="fade-up">
           <div className="space-avatars-joint">
@@ -235,6 +264,46 @@ export default function SpaceHub({
           </div>
 
           <div className="space-banner-actions">
+            <button
+              type="button"
+              className="btn btn--primary"
+              style={{ width: 'auto', display: 'inline-flex', alignItems: 'center', gap: '8px' }}
+              disabled={isExportingPdf}
+              onClick={async () => {
+                try {
+                  setIsExportingPdf(true)
+                  await exportMemoryBookPDF({
+                    userName: currentUserProfile.full_name || 'Ben',
+                    partnerName: partner?.full_name || 'Ortak',
+                    startDate: activeSpace.created_at,
+                    daysTogether: days,
+                    memories: initialMemories,
+                    journalEntries: initialJournalEntries,
+                  })
+                } catch (e) {
+                  console.error('PDF export failed:', e)
+                  alert(lang === 'tr' ? 'Anı kitabı indirilirken bir hata oluştu.' : 'Failed to export memory book.')
+                } finally {
+                  setIsExportingPdf(false)
+                }
+              }}
+            >
+              {isExportingPdf ? (
+                <>
+                  <span className="spinner spinner--sm" style={{ borderColor: '#fff', borderTopColor: 'transparent' }} />
+                  <span>{lang === 'tr' ? 'Hazırlanıyor...' : 'Exporting...'}</span>
+                </>
+              ) : (
+                <>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                    <polyline points="7 10 12 15 17 10"/>
+                    <line x1="12" y1="15" x2="12" y2="3"/>
+                  </svg>
+                  <span>{lang === 'tr' ? 'Anı Kitabını İndir' : 'Download Memory Book'}</span>
+                </>
+              )}
+            </button>
             {partner && (
               <>
                 <Link

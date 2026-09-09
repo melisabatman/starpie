@@ -4,6 +4,8 @@ import { useState, useTransition } from 'react'
 import Link from 'next/link'
 import { useLanguage } from '@/components/LanguageProvider'
 import { toggleUserBan } from '@/lib/actions/admin'
+import { unblockUser } from '@/lib/actions/moderation'
+import ModerationMenu from '@/components/ModerationMenu'
 import type { Profile } from '@/lib/types'
 
 interface ProfileCardViewProps {
@@ -91,34 +93,45 @@ export default function ProfileCardView({
         </div>
       )}
 
-      {/* Friend's Profile Actions */}
-      {!isOwnProfile && isFriendsWith && (
+      {/* Other User's Profile Actions */}
+      {!isOwnProfile && (
         <div className="profile-card__bio" style={{ paddingTop: 0, borderTop: '1px solid var(--pink-100)' }}>
-          <div className="profile-actions" style={{ marginTop: '16px' }}>
-            <Link
-              href={`/messages/${profile.id}`}
-              id="send-message-btn"
-              className="btn btn--primary"
-              style={{ display: 'inline-flex', flex: 1, justifyContent: 'center' }}
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-              </svg>
-              {t('profile.send_message')}
-            </Link>
+          <div className="profile-actions" style={{ marginTop: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            {isFriendsWith && (
+              <>
+                <Link
+                  href={`/messages/${profile.id}`}
+                  id="send-message-btn"
+                  className="btn btn--primary"
+                  style={{ display: 'inline-flex', flex: 1, justifyContent: 'center' }}
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                  </svg>
+                  {t('profile.send_message')}
+                </Link>
 
-            <Link
-              href={`/space?partnerId=${profile.id}`}
-              id="friend-space-btn"
-              prefetch={true}
-              className="btn btn--secondary"
-              style={{ display: 'inline-flex', flex: 1, justifyContent: 'center' }}
-            >
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-              </svg>
-              {t('profile.couple_space')}
-            </Link>
+                <Link
+                  href={`/space?partnerId=${profile.id}`}
+                  id="friend-space-btn"
+                  prefetch={true}
+                  className="btn btn--secondary"
+                  style={{ display: 'inline-flex', flex: 1, justifyContent: 'center' }}
+                >
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                  </svg>
+                  {t('profile.couple_space')}
+                </Link>
+              </>
+            )}
+
+            <ModerationMenu
+              targetType="user"
+              targetId={profile.id}
+              reportedUserId={profile.id}
+              targetName={profile.full_name || undefined}
+            />
           </div>
         </div>
       )}
@@ -248,3 +261,87 @@ export function ProfileFooterNotice() {
     </p>
   )
 }
+
+export function ProfileBlockedNotice({
+  targetUserId,
+  blockedByMe,
+}: {
+  targetUserId: string
+  blockedByMe: boolean
+}) {
+  const { lang } = useLanguage()
+  const [isPending, startTransition] = useTransition()
+  const [unblocked, setUnblocked] = useState(false)
+
+  const handleUnblock = () => {
+    startTransition(async () => {
+      const res = await unblockUser(targetUserId)
+      if (res.success) {
+        setUnblocked(true)
+        window.location.reload()
+      }
+    })
+  }
+
+  if (unblocked) {
+    return (
+      <div className="alert alert--success" style={{ margin: '24px auto', maxWidth: 480, textAlign: 'center' }}>
+        {lang === 'tr' ? 'Engel kaldırıldı. Sayfa yenileniyor...' : 'Unblocked. Reloading...'}
+      </div>
+    )
+  }
+
+  return (
+    <div
+      style={{
+        margin: '32px auto',
+        maxWidth: 480,
+        padding: '32px 24px',
+        borderRadius: '24px',
+        background: 'rgba(255, 255, 255, 0.85)',
+        border: '1.5px solid var(--pink-200)',
+        boxShadow: 'var(--shadow-md)',
+        textAlign: 'center',
+        backdropFilter: 'blur(10px)',
+      }}
+    >
+      <div style={{ fontSize: 36, marginBottom: 12 }}>🚫</div>
+      <h3 style={{ fontSize: 18, fontWeight: 700, color: 'var(--gray-800)', marginBottom: 8 }}>
+        {blockedByMe
+          ? lang === 'tr'
+            ? 'Bu Kullanıcıyı Engellediniz'
+            : 'You Have Blocked This User'
+          : lang === 'tr'
+          ? 'Bu Profile Ulaşılamıyor'
+          : 'Profile Unavailable'}
+      </h3>
+      <p style={{ fontSize: 14, color: 'var(--gray-600)', lineHeight: 1.5, marginBottom: 20 }}>
+        {blockedByMe
+          ? lang === 'tr'
+            ? 'Engellediğiniz için bu kullanıcının paylaşımlarını ve profil detaylarını görüntüleyemezsiniz.'
+            : 'You cannot view this user’s posts or details because you have blocked them.'
+          : lang === 'tr'
+          ? 'Bu kullanıcının profili sizin için görünür değil.'
+          : 'This user’s profile is not available to you.'}
+      </p>
+      {blockedByMe && (
+        <button
+          type="button"
+          className="btn btn--secondary"
+          onClick={handleUnblock}
+          disabled={isPending}
+          style={{ width: 'auto', display: 'inline-flex', padding: '8px 24px' }}
+        >
+          {isPending
+            ? lang === 'tr'
+              ? 'Kaldırılıyor...'
+              : 'Unblocking...'
+            : lang === 'tr'
+            ? 'Engeli Kaldır'
+            : 'Unblock'}
+        </button>
+      )}
+    </div>
+  )
+}
+

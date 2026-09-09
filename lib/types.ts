@@ -226,3 +226,45 @@ export type TimelinePost = {
   created_at: string
   author?: Pick<Profile, 'id' | 'full_name' | 'profession' | 'avatar_url' | 'role'> | null
 }
+
+export type BlockedUser = {
+  id: string
+  blocker_id: string
+  blocked_id: string
+  created_at: string
+}
+
+export type Report = {
+  id: string
+  reporter_id: string
+  reported_user_id?: string | null
+  target_type: 'user' | 'post' | 'comment'
+  target_id: string
+  reason: string
+  details?: string | null
+  status: 'pending' | 'reviewed' | 'dismissed' | 'resolved'
+  created_at: string
+  reporter?: Pick<Profile, 'id' | 'full_name' | 'avatar_url'> | null
+  reported_user?: Pick<Profile, 'id' | 'full_name' | 'avatar_url'> | null
+}
+
+export type NotificationType =
+  | 'friend_request'
+  | 'friend_accept'
+  | 'new_message'
+  | 'post_like'
+  | 'post_comment'
+  | 'timeline_post'
+
+export type AppNotification = {
+  id: string
+  user_id: string
+  actor_id: string
+  type: NotificationType
+  entity_id?: string | null
+  content?: string | null
+  is_read: boolean
+  created_at: string
+  actor?: Pick<Profile, 'id' | 'full_name' | 'avatar_url'> | null
+}
+
