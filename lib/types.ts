@@ -268,3 +268,44 @@ export type AppNotification = {
   actor?: Pick<Profile, 'id' | 'full_name' | 'avatar_url'> | null
 }
 
+export type GroupRole = 'admin' | 'member'
+
+export type Group = {
+  id: string
+  name: string
+  description: string | null
+  avatar_url: string | null
+  created_by: string | null
+  created_at: string
+  updated_at: string
+}
+
+export type GroupMember = {
+  id: string
+  group_id: string
+  user_id: string
+  role: GroupRole
+  joined_at: string
+  profile?: Pick<Profile, 'id' | 'full_name' | 'profession' | 'avatar_url'> | null
+}
+
+export type GroupMessage = {
+  id: string
+  group_id: string
+  sender_id: string
+  content: string | null
+  message_type?: MessageType
+  audio_url?: string | null
+  created_at: string
+  sender?: Pick<Profile, 'id' | 'full_name' | 'profession' | 'avatar_url'> | null
+}
+
+export type GroupConversation = {
+  group: Group
+  members_count: number
+  user_role: GroupRole
+  last_message: GroupMessage | null
+  unread_count: number
+}
+
+

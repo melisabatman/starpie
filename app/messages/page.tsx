@@ -2,12 +2,13 @@ import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 import { getCachedUser } from '@/lib/supabase/cached'
 import { getConversations } from '@/lib/actions/messages'
+import { getUserGroups } from '@/lib/actions/groups'
 import PageHeader from '@/components/PageHeader'
 import ConversationList from '@/components/ConversationList'
 
 export const metadata: Metadata = {
   title: 'Mesajlar — Starpie',
-  description: 'Arkadaşlarınla birebir sohbet et.',
+  description: 'Arkadaşlarınla sohbet et ve grup sohbetleri oluştur.',
 }
 
 export default async function MessagesPage() {
@@ -15,7 +16,10 @@ export default async function MessagesPage() {
 
   if (!user) redirect('/')
 
-  const conversations = await getConversations()
+  const [conversations, groups] = await Promise.all([
+    getConversations(),
+    getUserGroups(),
+  ])
 
   return (
     <div className="profile-page">
@@ -35,6 +39,7 @@ export default async function MessagesPage() {
         <ConversationList
           currentUserId={user.id}
           initialConversations={conversations}
+          initialGroups={groups}
         />
       </div>
     </div>
