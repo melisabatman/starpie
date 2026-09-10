@@ -357,8 +357,10 @@ export async function sendGroupMessage(
     return { success: false, error: 'Bu gruba mesaj gönderme yetkiniz yok.' }
   }
 
+  const adminClient = getAdminClient()
+
   // Insert message
-  const { data, error } = await supabase
+  const { data, error } = await adminClient
     .from('group_messages')
     .insert({
       group_id: groupId,
@@ -376,7 +378,7 @@ export async function sendGroupMessage(
   }
 
   // Update group updated_at
-  await supabase
+  await adminClient
     .from('groups')
     .update({ updated_at: new Date().toISOString() })
     .eq('id', groupId)
@@ -440,7 +442,8 @@ export async function updateGroupInfo(
     updates.avatar_url = data.avatarUrl || null
   }
 
-  const { error } = await supabase
+  const adminClient = getAdminClient()
+  const { error } = await adminClient
     .from('groups')
     .update(updates)
     .eq('id', groupId)
@@ -498,7 +501,8 @@ export async function addGroupMembers(
     role: 'member' as GroupRole,
   }))
 
-  const { error } = await supabase.from('group_members').insert(rowsToInsert)
+  const adminClient = getAdminClient()
+  const { error } = await adminClient.from('group_members').insert(rowsToInsert)
 
   if (error) {
     return { success: false, error: error.message }
@@ -558,13 +562,15 @@ export async function removeGroupMember(
 
         if (otherMembers && otherMembers.length > 0) {
           // Promote the oldest remaining member to admin
-          await supabase
+          const adminClient = getAdminClient()
+          await adminClient
             .from('group_members')
             .update({ role: 'admin' })
             .eq('id', otherMembers[0].id)
         } else {
           // No members left at all, delete the entire group
-          await supabase.from('groups').delete().eq('id', groupId)
+          const adminClient = getAdminClient()
+          await adminClient.from('groups').delete().eq('id', groupId)
           revalidatePath('/messages')
           return { success: true }
         }
@@ -572,7 +578,8 @@ export async function removeGroupMember(
     }
 
     // Delete current user's membership
-    const { error } = await supabase
+    const adminClient = getAdminClient()
+    const { error } = await adminClient
       .from('group_members')
       .delete()
       .eq('group_id', groupId)
@@ -595,7 +602,8 @@ export async function removeGroupMember(
       return { success: false, error: 'Üye çıkarma yetkisi yalnızca yöneticilere aittir.' }
     }
 
-    const { error } = await supabase
+    const adminClient = getAdminClient()
+    const { error } = await adminClient
       .from('group_members')
       .delete()
       .eq('group_id', groupId)
@@ -651,7 +659,8 @@ export async function setMemberRole(
     }
   }
 
-  const { error } = await supabase
+  const adminClient = getAdminClient()
+  const { error } = await adminClient
     .from('group_members')
     .update({ role: newRole })
     .eq('group_id', groupId)
