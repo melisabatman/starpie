@@ -2776,6 +2776,135 @@ body {
   color: rgba(255, 255, 255, 0.95);
 }
 
+/* ── Group Chat Message Bubbles & Senders ── */
+.chat-bubble-row--group {
+  align-items: flex-end;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.chat-bubble-row--group.chat-bubble-row--me {
+  justify-content: flex-end;
+}
+
+.chat-bubble-row--group.chat-bubble-row--them {
+  justify-content: flex-start;
+}
+
+/* Aliases for self/partner classes */
+.chat-bubble-row--self {
+  justify-content: flex-end !important;
+  animation: fadeInRight 0.22s ease-out;
+}
+
+.chat-bubble-row--partner {
+  justify-content: flex-start !important;
+  animation: fadeInLeft 0.22s ease-out;
+}
+
+.chat-bubble--self {
+  background: linear-gradient(135deg, var(--pink-600) 0%, var(--pink-500) 100%) !important;
+  color: #ffffff !important;
+  border-bottom-right-radius: 4px !important;
+  box-shadow: 0 4px 14px rgba(225, 29, 72, 0.2) !important;
+}
+
+.chat-bubble--partner {
+  background: #ffffff !important;
+  color: var(--gray-800) !important;
+  border-bottom-left-radius: 4px !important;
+  border: 1px solid var(--pink-100) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04) !important;
+}
+
+.chat-bubble--self .chat-bubble__time {
+  color: rgba(255, 255, 255, 0.82) !important;
+  font-size: 10.5px;
+}
+
+.chat-bubble--partner .chat-bubble__time {
+  color: var(--gray-400) !important;
+  font-size: 10.5px;
+}
+
+.group-bubble-avatar-wrapper {
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  margin-bottom: 2px;
+  border-radius: 50%;
+  overflow: hidden;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+  border: 1.5px solid rgba(244, 114, 182, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fdf2f8;
+}
+
+.group-bubble-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+  display: block;
+}
+
+.group-bubble-avatar-fallback {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  font-weight: 750;
+  font-size: 13.5px;
+  text-transform: uppercase;
+  user-select: none;
+  box-shadow: inset 0 -2px 4px rgba(0, 0, 0, 0.15);
+}
+
+.group-bubble {
+  position: relative;
+  min-width: 130px;
+}
+
+.group-bubble-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+  padding-bottom: 3px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.group-bubble-sender-name {
+  font-size: 12.5px;
+  font-weight: 750;
+  letter-spacing: -0.2px;
+  line-height: 1.25;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 190px;
+}
+
+.group-admin-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 1.5px 6px;
+  border-radius: 6px;
+  font-size: 9.5px;
+  font-weight: 750;
+  line-height: 1;
+  color: #db2777;
+  background: #fdf2f8;
+  border: 1px solid #fbcfe8;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+}
+
 /* ── Error Banner ── */
 .chat-error-banner {
   background: #fef2f2;
@@ -8413,14 +8542,33 @@ body:has(.app-topbar) {
   border-color: #382444;
 }
 
-[data-theme="dark"] .chat-bubble--incoming {
-  background: #251a30;
-  border-color: #3d284f;
-  color: #faf5ff;
+[data-theme="dark"] .chat-bubble--incoming,
+[data-theme="dark"] .chat-bubble--them,
+[data-theme="dark"] .chat-bubble--partner {
+  background: #251a30 !important;
+  border-color: #3d284f !important;
+  color: #faf5ff !important;
 }
 
-[data-theme="dark"] .chat-bubble--incoming .chat-bubble__time {
-  color: #a89cb5;
+[data-theme="dark"] .chat-bubble--incoming .chat-bubble__time,
+[data-theme="dark"] .chat-bubble--them .chat-bubble__time,
+[data-theme="dark"] .chat-bubble--partner .chat-bubble__time {
+  color: #a89cb5 !important;
+}
+
+[data-theme="dark"] .group-bubble-header {
+  border-bottom-color: rgba(255, 255, 255, 0.08);
+}
+
+[data-theme="dark"] .group-admin-badge {
+  color: #f472b6;
+  background: rgba(244, 114, 182, 0.15);
+  border-color: rgba(244, 114, 182, 0.3);
+}
+
+[data-theme="dark"] .group-bubble-avatar-wrapper {
+  background: #251a30;
+  border-color: rgba(244, 114, 182, 0.3);
 }
 
 [data-theme="dark"] .conv-item {

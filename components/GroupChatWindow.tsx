@@ -9,7 +9,30 @@ import { sendGroupMessage, deleteGroup } from '@/lib/actions/groups'
 import AudioMessagePlayer from '@/components/AudioMessagePlayer'
 import GroupInfoModal from '@/components/GroupInfoModal'
 import { useLanguage } from '@/components/LanguageProvider'
-import type { Group, GroupMember, GroupMessage, GroupRole } from '@/lib/types'
+import type { Group, GroupMember, GroupMessage, GroupRole, Profile } from '@/lib/types'
+
+const SENDER_COLORS = [
+  '#db2777', // Pink-600
+  '#7c3aed', // Violet-600
+  '#0284c7', // Sky-600
+  '#059669', // Emerald-600
+  '#d97706', // Amber-600
+  '#ea580c', // Orange-600
+  '#4f46e5', // Indigo-600
+  '#0d9488', // Teal-600
+  '#c026d3', // Fuchsia-600
+  '#0891b2', // Cyan-600
+]
+
+function getSenderColor(id: string): string {
+  if (!id) return '#db2777'
+  let hash = 0
+  for (let i = 0; i < id.length; i++) {
+    hash = id.charCodeAt(i) + ((hash << 5) - hash)
+  }
+  const index = Math.abs(hash) % SENDER_COLORS.length
+  return SENDER_COLORS[index]
+}
 
 interface GroupChatWindowProps {
   currentUserId: string
@@ -76,6 +99,61 @@ export default function GroupChatWindow({
   const [members, setMembers] = useState<GroupMember[]>(initialMembers)
   const [currentUserRole, setCurrentUserRole] = useState<GroupRole>(initialCurrentUserRole)
   const [messages, setMessages] = useState<GroupMessage[]>(initialMessages)
+
+  const [profilesMap, setProfilesMap] = useState<
+    Record<string, Pick<Profile, 'id' | 'full_name' | 'profession' | 'avatar_url'>>
+  >(() => {
+    const initial: Record<string, any> = {}
+    initialMembers.forEach(m => {
+      if (m.profile) initial[m.user_id] = m.profile
+    })
+    initialMessages.forEach(m => {
+      if (m.sender) initial[m.sender_id] = m.sender
+    })
+    return initial
+  })
+
+  // Synchronize profilesMap when members update
+  useEffect(() => {
+    setProfilesMap(prev => {
+      const next = { ...prev }
+      let changed = false
+      members.forEach(m => {
+        if (m.profile && !next[m.user_id]) {
+          next[m.user_id] = m.profile
+          changed = true
+        }
+      })
+      return changed ? next : prev
+    })
+  }, [members])
+
+  // Auto-fetch profile for any unknown sender in messages
+  useEffect(() => {
+    const unknownSenderIds = messages
+      .filter(m => m.sender_id !== currentUserId && !profilesMap[m.sender_id] && !members.some(mem => mem.user_id === m.sender_id && mem.profile))
+      .map(m => m.sender_id)
+
+    if (unknownSenderIds.length === 0) return
+
+    const uniqueIds = Array.from(new Set(unknownSenderIds))
+    const supabase = createClient()
+    supabase
+      .from('profiles')
+      .select('id, full_name, profession, avatar_url')
+      .in('id', uniqueIds)
+      .then(({ data }) => {
+        if (data && data.length > 0) {
+          setProfilesMap(prev => {
+            const next = { ...prev }
+            data.forEach(p => {
+              next[p.id] = p
+            })
+            return next
+          })
+        }
+      })
+  }, [messages, currentUserId, members, profilesMap])
 
   const [inputText, setInputText] = useState('')
   const [isSending, setIsSending] = useState(false)
@@ -146,11 +224,12 @@ export default function GroupChatWindow({
           setMessages(prev => {
             if (prev.some(m => m.id === newMsg.id)) return prev
 
-            // Find sender profile from members list
+            // Find sender profile from profilesMap or members list
             const senderMember = members.find(m => m.user_id === newMsg.sender_id)
+            const senderProf = profilesMap[newMsg.sender_id] || senderMember?.profile || null
             const enrichedMsg: GroupMessage = {
               ...newMsg,
-              sender: senderMember?.profile || null,
+              sender: senderProf,
             }
             return [...prev, enrichedMsg]
           })
@@ -527,46 +606,77 @@ export default function GroupChatWindow({
         {/* Message Bubbles */}
         {messages.map((msg, index) => {
           const isMe = msg.sender_id === currentUserId
-          const senderName = isMe ? t('groups.you') : msg.sender?.full_name || 'Üye'
-          const showSenderHeader = !isMe && (index === 0 || messages[index - 1].sender_id !== msg.sender_id)
+          const senderMember = members.find(m => m.user_id === msg.sender_id)
+          const senderProf = msg.sender || profilesMap[msg.sender_id] || senderMember?.profile
+
+          const senderName = isMe
+            ? (lang === 'tr' ? 'Siz' : 'You')
+            : (senderProf?.full_name || senderMember?.profile?.full_name || (lang === 'tr' ? 'Grup Üyesi' : 'Group Member'))
+
+          const senderAvatar = senderProf?.avatar_url || senderMember?.profile?.avatar_url
+          const isAdmin = senderMember?.role === 'admin'
+          const senderColor = getSenderColor(msg.sender_id)
+          const isAudio = msg.message_type === 'audio' || !!msg.audio_url
 
           return (
             <div
               key={msg.id}
-              className={`chat-bubble-row ${isMe ? 'chat-bubble-row--self' : 'chat-bubble-row--partner'} ${
-                msg.message_type === 'audio' ? 'chat-bubble-row--audio' : ''
+              className={`chat-bubble-row ${isMe ? 'chat-bubble-row--me' : 'chat-bubble-row--them'} chat-bubble-row--group ${
+                isAudio ? 'chat-bubble-row--audio' : ''
               }`}
             >
               {/* Partner Avatar in group */}
               {!isMe && (
-                <div className="group-bubble-avatar">
-                  {msg.sender?.avatar_url ? (
+                <div className="group-bubble-avatar-wrapper" title={senderName}>
+                  {senderAvatar ? (
                     <Image
-                      src={msg.sender.avatar_url}
+                      src={senderAvatar}
                       alt={senderName}
-                      width={28}
-                      height={28}
-                      style={{ objectFit: 'cover', borderRadius: '50%' }}
+                      width={34}
+                      height={34}
+                      className="group-bubble-avatar-img"
                     />
                   ) : (
-                    <span className="group-bubble-avatar-fallback">
-                      {(msg.sender?.full_name || '?')[0].toUpperCase()}
-                    </span>
+                    <div
+                      className="group-bubble-avatar-fallback"
+                      style={{ backgroundColor: senderColor }}
+                    >
+                      {(senderName || '?')[0].toUpperCase()}
+                    </div>
                   )}
                 </div>
               )}
 
-              <div className={`chat-bubble ${isMe ? 'chat-bubble--self' : 'chat-bubble--partner'} group-bubble`}>
-                {/* Sender Name in group for incoming bubbles */}
-                {!isMe && showSenderHeader && (
-                  <span className="group-bubble-sender-name">{senderName}</span>
+              <div
+                className={`chat-bubble ${isMe ? 'chat-bubble--me' : 'chat-bubble--them'} group-bubble ${
+                  isMe ? 'group-bubble--self' : 'group-bubble--partner'
+                } ${isAudio ? 'chat-bubble--audio' : ''}`}
+              >
+                {/* Sender Header for incoming bubbles */}
+                {!isMe && (
+                  <div className="group-bubble-header">
+                    <span
+                      className="group-bubble-sender-name"
+                      style={{ color: senderColor }}
+                    >
+                      {senderName}
+                    </span>
+                    {isAdmin && (
+                      <span
+                        className="group-admin-badge"
+                        title={lang === 'tr' ? 'Grup Yöneticisi' : 'Group Admin'}
+                      >
+                        {lang === 'tr' ? 'Yönetici' : 'Admin'}
+                      </span>
+                    )}
+                  </div>
                 )}
 
                 {/* Bubble Content: Audio or Text */}
-                {msg.message_type === 'audio' && msg.audio_url ? (
+                {isAudio && msg.audio_url ? (
                   <AudioMessagePlayer src={msg.audio_url} isMe={isMe} />
                 ) : (
-                  <p className="chat-bubble__text">{msg.content}</p>
+                  <p className="chat-bubble__content">{msg.content}</p>
                 )}
 
                 <div className="chat-bubble__meta">

@@ -245,8 +245,9 @@ export async function getGroupDetails(groupId: string): Promise<{
   }
 
   // Fetch profiles of members
+  const adminClient = getAdminClient()
   const memberUserIds = membersRaw.map(m => m.user_id)
-  const { data: profiles } = await supabase
+  const { data: profiles } = await adminClient
     .from('profiles')
     .select('id, full_name, profession, avatar_url')
     .in('id', memberUserIds)
@@ -298,10 +299,11 @@ export async function getGroupMessages(groupId: string): Promise<GroupMessage[]>
   }
 
   // Fetch sender profiles
+  const adminClient = getAdminClient()
   const senderIds = Array.from(new Set(rawMessages.map(m => m.sender_id)))
   let profiles: Pick<Profile, 'id' | 'full_name' | 'profession' | 'avatar_url'>[] = []
   if (senderIds.length > 0) {
-    const { data: profs } = await supabase
+    const { data: profs } = await adminClient
       .from('profiles')
       .select('id, full_name, profession, avatar_url')
       .in('id', senderIds)
