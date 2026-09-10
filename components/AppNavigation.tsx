@@ -16,6 +16,40 @@ import type { Profile } from '@/lib/types'
 type ThemeMode = 'pink' | 'dark' | 'lavender'
 type LangMode = 'tr' | 'en'
 
+function playNotificationChime() {
+  if (typeof window === 'undefined') return
+  try {
+    const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext
+    if (!AudioContextClass) return
+    const ctx = new AudioContextClass()
+    const now = ctx.currentTime
+
+    const osc1 = ctx.createOscillator()
+    const gain1 = ctx.createGain()
+    osc1.type = 'sine'
+    osc1.frequency.setValueAtTime(587.33, now) // D5
+    gain1.gain.setValueAtTime(0.12, now)
+    gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.28)
+    osc1.connect(gain1)
+    gain1.connect(ctx.destination)
+    osc1.start(now)
+    osc1.stop(now + 0.28)
+
+    const osc2 = ctx.createOscillator()
+    const gain2 = ctx.createGain()
+    osc2.type = 'sine'
+    osc2.frequency.setValueAtTime(880, now + 0.1) // A5
+    gain2.gain.setValueAtTime(0.12, now + 0.1)
+    gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.45)
+    osc2.connect(gain2)
+    gain2.connect(ctx.destination)
+    osc2.start(now + 0.1)
+    osc2.stop(now + 0.45)
+  } catch {
+    // Audio autoplay restrictions before first user interaction
+  }
+}
+
 export default function AppNavigation() {
   const pathname = usePathname()
   const router = useRouter()
@@ -27,11 +61,15 @@ export default function AppNavigation() {
   const [aboutOpen, setAboutOpen] = useState(false)
   const [isLoggingOut, startLogoutTransition] = useTransition()
   const [unreadMessagesCount, setUnreadMessagesCount] = useState<number>(0)
+  const [userGroupIds, setUserGroupIds] = useState<Set<string>>(new Set())
   const [incomingToast, setIncomingToast] = useState<{
-    senderId: string
-    senderName: string
-    senderAvatar: string | null
-    text: string
+    id: string
+    title: string
+    subtitle: string
+    avatar: string | null
+    fallbackChar: string
+    linkHref: string
+    isGroup?: boolean
   } | null>(null)
 
   // 1. Listen to Auth State and Fetch Profile
@@ -99,7 +137,7 @@ export default function AppNavigation() {
     }
   }, [user?.id])
 
-  // 1c. Realtime Incoming Message Listener & Unread Badge Count
+  // 1c. Realtime Incoming Message Listener & Unread Badge Count (Direct + Groups)
   useEffect(() => {
     if (!user?.id) return
     const supabase = createClient()
@@ -115,57 +153,166 @@ export default function AppNavigation() {
     }
     fetchUnread()
 
+    // Fetch user's groups to listen for incoming group messages
+    const fetchUserGroups = async () => {
+      const { data } = await supabase
+        .from('group_members')
+        .select('group_id')
+        .eq('user_id', user.id)
+      if (data) {
+        setUserGroupIds(new Set(data.map(d => d.group_id)))
+      }
+    }
+    fetchUserGroups()
+
     const channel = supabase
-      .channel(`incoming-messages-nav-${user.id}`)
+      .channel(`global-messages-nav-${user.id}`)
+      // 1. Live Direct Messages
       .on(
         'postgres_changes',
         {
           event: 'INSERT',
           schema: 'public',
           table: 'messages',
-          filter: `receiver_id=eq.${user.id}`,
         },
         async (payload) => {
-          const newMsg = payload.new as { sender_id: string; content?: string; message_type?: string }
-          setUnreadMessagesCount(prev => prev + 1)
+          const newMsg = payload.new as {
+            id: string
+            sender_id: string
+            receiver_id: string
+            content?: string
+            message_type?: string
+          }
+          if (!newMsg || newMsg.receiver_id !== user.id || newMsg.sender_id === user.id) return
 
-          // Fetch sender profile to display rich toast
-          const { data: senderProf } = await supabase
-            .from('profiles')
-            .select('full_name, avatar_url')
-            .eq('id', newMsg.sender_id)
-            .single()
+          // Don't show toast if user is ALREADY chatting with this person in active window
+          const isCurrentlyChatting = pathname === `/messages/${newMsg.sender_id}`
+          if (!isCurrentlyChatting) {
+            setUnreadMessagesCount(prev => prev + 1)
+            playNotificationChime()
 
-          const senderName = senderProf?.full_name || (lang === 'tr' ? 'Bir arkadaşın' : 'A friend')
-          const textPreview = newMsg.message_type === 'audio'
-            ? (lang === 'tr' ? '1 yeni sesli mesaj' : '1 new voice message')
-            : (newMsg.content && newMsg.content.length > 50 ? newMsg.content.slice(0, 50) + '...' : newMsg.content || (lang === 'tr' ? 'Yeni bir mesaj' : 'New message'))
+            // Fetch sender profile to display rich toast
+            const { data: senderProf } = await supabase
+              .from('profiles')
+              .select('full_name, avatar_url')
+              .eq('id', newMsg.sender_id)
+              .single()
 
-          setIncomingToast({
-            senderId: newMsg.sender_id,
-            senderName,
-            senderAvatar: senderProf?.avatar_url ?? null,
-            text: textPreview,
-          })
+            const senderName = senderProf?.full_name || (lang === 'tr' ? 'Bir arkadaşın' : 'A friend')
+            const textPreview = newMsg.message_type === 'audio'
+              ? (lang === 'tr' ? '🎙️ Sesli bir mesaj gönderdi' : '🎙️ Sent a voice message')
+              : (newMsg.content && newMsg.content.length > 50 ? newMsg.content.slice(0, 50) + '...' : newMsg.content || (lang === 'tr' ? 'Yeni bir mesaj' : 'New message'))
 
-          setTimeout(() => {
-            setIncomingToast(null)
-          }, 6500)
+            setIncomingToast({
+              id: newMsg.id,
+              title: senderName,
+              subtitle: textPreview,
+              avatar: senderProf?.avatar_url ?? null,
+              fallbackChar: senderName[0]?.toUpperCase() ?? 'S',
+              linkHref: `/messages/${newMsg.sender_id}`,
+              isGroup: false,
+            })
+
+            setTimeout(() => {
+              setIncomingToast(null)
+            }, 6500)
+          }
+        }
+      )
+      // 2. Live Group Messages
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'group_messages',
+        },
+        async (payload) => {
+          const newMsg = payload.new as {
+            id: string
+            group_id: string
+            sender_id: string
+            content?: string
+            message_type?: string
+          }
+          if (!newMsg || newMsg.sender_id === user.id) return
+
+          // Verify group membership
+          let isMember = userGroupIds.has(newMsg.group_id)
+          if (!isMember) {
+            const { data: mem } = await supabase
+              .from('group_members')
+              .select('id')
+              .eq('group_id', newMsg.group_id)
+              .eq('user_id', user.id)
+              .maybeSingle()
+            if (mem) {
+              isMember = true
+              setUserGroupIds(prev => new Set([...prev, newMsg.group_id]))
+            }
+          }
+
+          if (!isMember) return
+
+          // Don't toast if currently in that group chat
+          const isCurrentlyInThisGroup = pathname === `/messages/group/${newMsg.group_id}`
+          if (!isCurrentlyInThisGroup) {
+            setUnreadMessagesCount(prev => prev + 1)
+            playNotificationChime()
+
+            // Fetch group info and sender profile concurrently
+            const [groupRes, senderRes] = await Promise.all([
+              supabase.from('groups').select('name, avatar_url').eq('id', newMsg.group_id).single(),
+              supabase.from('profiles').select('full_name, avatar_url').eq('id', newMsg.sender_id).single(),
+            ])
+
+            const groupName = groupRes.data?.name || (lang === 'tr' ? 'Grup Sohbeti' : 'Group Chat')
+            const senderName = senderRes.data?.full_name || (lang === 'tr' ? 'Grup Üyesi' : 'Group Member')
+            const textPreview = newMsg.message_type === 'audio'
+              ? (lang === 'tr' ? '🎙️ Sesli mesaj' : '🎙️ Voice message')
+              : (newMsg.content && newMsg.content.length > 50 ? newMsg.content.slice(0, 50) + '...' : newMsg.content || '...')
+
+            setIncomingToast({
+              id: newMsg.id,
+              title: groupName,
+              subtitle: `${senderName}: ${textPreview}`,
+              avatar: groupRes.data?.avatar_url || senderRes.data?.avatar_url || null,
+              fallbackChar: groupName[0]?.toUpperCase() ?? 'G',
+              linkHref: `/messages/group/${newMsg.group_id}`,
+              isGroup: true,
+            })
+
+            setTimeout(() => {
+              setIncomingToast(null)
+            }, 6500)
+          }
         }
       )
       .subscribe()
 
     return () => {
-      channel.unsubscribe()
+      supabase.removeChannel(channel)
     }
-  }, [user?.id, lang])
+  }, [user?.id, lang, pathname, userGroupIds])
 
-  // Clear unread count when viewing messages
+  // Re-fetch or clear unread count on route change
   useEffect(() => {
+    if (!user?.id) return
+
     if (pathname.startsWith('/messages')) {
       setUnreadMessagesCount(0)
+    } else {
+      const supabase = createClient()
+      supabase
+        .from('messages')
+        .select('id', { count: 'exact', head: true })
+        .eq('receiver_id', user.id)
+        .eq('is_read', false)
+        .then(({ count }) => {
+          setUnreadMessagesCount(count || 0)
+        })
     }
-  }, [pathname])
+  }, [pathname, user?.id])
 
   // Close drawer on route change
   useEffect(() => {
@@ -404,28 +551,32 @@ export default function AppNavigation() {
         <div className="in-app-message-toast" role="alert">
           <div className="toast-inner">
             <div className="toast-avatar">
-              {incomingToast.senderAvatar ? (
+              {incomingToast.avatar ? (
                 <Image
-                  src={incomingToast.senderAvatar}
-                  alt={incomingToast.senderName}
-                  width={40}
-                  height={40}
+                  src={incomingToast.avatar}
+                  alt={incomingToast.title}
+                  width={42}
+                  height={42}
                   style={{ objectFit: 'cover', objectPosition: 'center', borderRadius: '50%' }}
                 />
               ) : (
-                <span>{incomingToast.senderName[0]?.toUpperCase() ?? 'S'}</span>
+                <span>{incomingToast.fallbackChar}</span>
               )}
             </div>
             <div className="toast-content">
               <div className="toast-title">
-                <span style={{ fontSize: '14px' }}>💬</span>
-                <strong>{incomingToast.senderName}</strong>
-                <span className="toast-label">{lang === 'tr' ? 'sana mesaj gönderdi' : 'sent you a message'}</span>
+                <span style={{ fontSize: '13px' }}>{incomingToast.isGroup ? '👥' : '💬'}</span>
+                <strong>{incomingToast.title}</strong>
+                <span className="toast-label">
+                  {incomingToast.isGroup
+                    ? (lang === 'tr' ? 'yeni grup mesajı' : 'new group message')
+                    : (lang === 'tr' ? 'sana mesaj gönderdi' : 'sent you a message')}
+                </span>
               </div>
-              <p className="toast-text">{incomingToast.text}</p>
+              <p className="toast-text">{incomingToast.subtitle}</p>
             </div>
             <Link
-              href={`/messages/${incomingToast.senderId}`}
+              href={incomingToast.linkHref}
               className="toast-action-btn"
               onClick={() => setIncomingToast(null)}
             >

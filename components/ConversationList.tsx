@@ -46,6 +46,40 @@ function formatRelativeTime(isoString: string | null | undefined, lang: 'tr' | '
   }
 }
 
+function playNotificationChime() {
+  if (typeof window === 'undefined') return
+  try {
+    const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext
+    if (!AudioContextClass) return
+    const ctx = new AudioContextClass()
+    const now = ctx.currentTime
+
+    const osc1 = ctx.createOscillator()
+    const gain1 = ctx.createGain()
+    osc1.type = 'sine'
+    osc1.frequency.setValueAtTime(587.33, now)
+    gain1.gain.setValueAtTime(0.12, now)
+    gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.28)
+    osc1.connect(gain1)
+    gain1.connect(ctx.destination)
+    osc1.start(now)
+    osc1.stop(now + 0.28)
+
+    const osc2 = ctx.createOscillator()
+    const gain2 = ctx.createGain()
+    osc2.type = 'sine'
+    osc2.frequency.setValueAtTime(880, now + 0.1)
+    gain2.gain.setValueAtTime(0.12, now + 0.1)
+    gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.45)
+    osc2.connect(gain2)
+    gain2.connect(ctx.destination)
+    osc2.start(now + 0.1)
+    osc2.stop(now + 0.45)
+  } catch {
+    // Ignore audio context autoplay errors
+  }
+}
+
 export default function ConversationList({
   currentUserId,
   initialConversations,
@@ -70,7 +104,7 @@ export default function ConversationList({
     const supabase = createClient()
 
     const channel = supabase
-      .channel('inbox-all-conversations')
+      .channel(`inbox-live-feed-${currentUserId}`)
       // 1. Direct messages
       .on(
         'postgres_changes',
@@ -81,14 +115,37 @@ export default function ConversationList({
         },
         payload => {
           const newMsg = payload.new as Message
+          if (!newMsg) return
 
           if (newMsg.sender_id === currentUserId || newMsg.receiver_id === currentUserId) {
             const partnerId =
               newMsg.sender_id === currentUserId ? newMsg.receiver_id : newMsg.sender_id
 
+            if (newMsg.sender_id !== currentUserId) {
+              playNotificationChime()
+            }
+
             setConversations(prev => {
               const partnerIndex = prev.findIndex(c => c.friend.id === partnerId)
-              if (partnerIndex === -1) return prev
+              if (partnerIndex === -1) {
+                // New incoming conversation: fetch partner profile and prepend
+                supabase
+                  .from('profiles')
+                  .select('id, full_name, profession, avatar_url')
+                  .eq('id', partnerId)
+                  .single()
+                  .then(({ data: friendProf }) => {
+                    if (friendProf) {
+                      const newConv: Conversation = {
+                        friend: friendProf,
+                        last_message: newMsg,
+                        unread_count: newMsg.sender_id === partnerId ? 1 : 0,
+                      }
+                      setConversations(curr => [newConv, ...curr])
+                    }
+                  })
+                return prev
+              }
 
               const updatedConv: Conversation = {
                 ...prev[partnerIndex],
@@ -115,23 +172,41 @@ export default function ConversationList({
         },
         payload => {
           const newGroupMsg = payload.new as GroupMessage
+          if (!newGroupMsg) return
 
-          setGroups(prev => {
-            const groupIndex = prev.findIndex(g => g.group.id === newGroupMsg.group_id)
-            if (groupIndex === -1) return prev
+          if (newGroupMsg.sender_id !== currentUserId) {
+            playNotificationChime()
+          }
 
-            const updatedGroup: GroupConversation = {
-              ...prev[groupIndex],
-              last_message: newGroupMsg,
-              unread_count:
-                newGroupMsg.sender_id !== currentUserId
-                  ? prev[groupIndex].unread_count + 1
-                  : prev[groupIndex].unread_count,
-            }
+          // Fetch sender profile so last message displays sender name
+          supabase
+            .from('profiles')
+            .select('id, full_name, profession, avatar_url')
+            .eq('id', newGroupMsg.sender_id)
+            .single()
+            .then(({ data: senderProf }) => {
+              const enriched: GroupMessage = {
+                ...newGroupMsg,
+                sender: senderProf || null,
+              }
 
-            const remaining = prev.filter((_, idx) => idx !== groupIndex)
-            return [updatedGroup, ...remaining]
-          })
+              setGroups(prev => {
+                const groupIndex = prev.findIndex(g => g.group.id === newGroupMsg.group_id)
+                if (groupIndex === -1) return prev
+
+                const updatedGroup: GroupConversation = {
+                  ...prev[groupIndex],
+                  last_message: enriched,
+                  unread_count:
+                    newGroupMsg.sender_id !== currentUserId
+                      ? prev[groupIndex].unread_count + 1
+                      : prev[groupIndex].unread_count,
+                }
+
+                const remaining = prev.filter((_, idx) => idx !== groupIndex)
+                return [updatedGroup, ...remaining]
+              })
+            })
         }
       )
       .subscribe()
