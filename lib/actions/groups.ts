@@ -1,6 +1,7 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
+import { getAdminClient } from '@/lib/supabase/admin'
 import { getCachedUser } from '@/lib/supabase/cached'
 import { revalidatePath } from 'next/cache'
 import type {
@@ -40,11 +41,11 @@ export async function createGroup({
     return { success: false, error: 'Grup ismi en fazla 100 karakter olabilir.' }
   }
 
-  const supabase = await createClient()
+  const adminClient = getAdminClient()
 
-  // 1. Insert Group record with pre-generated UUID to avoid RLS SELECT restrictions on new records
+  // 1. Insert Group record with pre-generated UUID
   const groupId = crypto.randomUUID()
-  const { error: groupError } = await supabase
+  const { error: groupError } = await adminClient
     .from('groups')
     .insert({
       id: groupId,
@@ -78,15 +79,15 @@ export async function createGroup({
     })
   }
 
-  const { error: membersError } = await supabase
+  const { error: membersError } = await adminClient
     .from('group_members')
     .insert(membersToInsert)
 
   if (membersError) {
     console.error('Error adding group members:', membersError)
     // Clean up created group if member insert completely failed
-    await supabase.from('groups').delete().eq('id', groupId)
-    return { success: false, error: 'Üyeler gruba eklenemedi.' }
+    await adminClient.from('groups').delete().eq('id', groupId)
+    return { success: false, error: 'Üyeler gruba eklenemedi: ' + (membersError.message || '') }
   }
 
   revalidatePath('/messages')
@@ -684,7 +685,8 @@ export async function deleteGroup(groupId: string): Promise<{ success: boolean; 
     return { success: false, error: 'Grubu yalnızca grup yöneticisi silebilir.' }
   }
 
-  const { error } = await supabase
+  const adminClient = getAdminClient()
+  const { error } = await adminClient
     .from('groups')
     .delete()
     .eq('id', groupId)
