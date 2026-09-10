@@ -333,12 +333,14 @@ export default function GroupInfoModal({
           </button>
         </div>
 
-        {/* Notifications / Alerts */}
-        {errorMsg && <div className="group-modal-alert group-modal-alert--error">{errorMsg}</div>}
-        {successMsg && <div className="group-modal-alert group-modal-alert--success">{successMsg}</div>}
+        {/* Modal Scrollable Body */}
+        <div className="group-info-body">
+          {/* Notifications / Alerts */}
+          {errorMsg && <div className="group-modal-alert group-modal-alert--error">{errorMsg}</div>}
+          {successMsg && <div className="group-modal-alert group-modal-alert--success">{successMsg}</div>}
 
-        {/* Group Hero Section */}
-        {!isEditing ? (
+          {/* Group Hero Section */}
+          {!isEditing ? (
           <div className="group-info-hero">
             <div className="group-info-avatar-wrap">
               {group.avatar_url ? (
@@ -662,44 +664,45 @@ export default function GroupInfoModal({
             )
           })}
         </div>
+      </div>
 
-        {/* Footer Actions: Leave Group / Delete Group */}
-        <div className="group-info-footer">
-          {/* Member Leave Button */}
+      {/* Footer Actions: Leave Group / Delete Group (Fixed Pinned Footer) */}
+      <div className="group-info-footer">
+        {/* Member Leave Button */}
+        <button
+          type="button"
+          className="btn-group-danger"
+          onClick={() => {
+            const myMember = members.find(m => m.user_id === currentUserId)
+            if (myMember) handleRemoveMember(myMember)
+          }}
+          disabled={isBusy}
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+            <polyline points="16 17 21 12 16 7" />
+            <line x1="21" y1="12" x2="9" y2="12" />
+          </svg>
+          {t('groups.leave_group')}
+        </button>
+
+        {/* Admin Delete Group Button */}
+        {isAdmin && (
           <button
             type="button"
-            className="btn-group-danger"
-            onClick={() => {
-              const myMember = members.find(m => m.user_id === currentUserId)
-              if (myMember) handleRemoveMember(myMember)
-            }}
+            className="btn-group-danger btn-group-danger--solid"
+            onClick={handleDeleteGroup}
             disabled={isBusy}
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-              <polyline points="16 17 21 12 16 7" />
-              <line x1="21" y1="12" x2="9" y2="12" />
+              <polyline points="3 6 5 6 21 6" />
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
             </svg>
-            {t('groups.leave_group')}
+            {t('groups.delete_group')}
           </button>
-
-          {/* Admin Delete Group Button */}
-          {isAdmin && (
-            <button
-              type="button"
-              className="btn-group-danger btn-group-danger--solid"
-              onClick={handleDeleteGroup}
-              disabled={isBusy}
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="3 6 5 6 21 6" />
-                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-              </svg>
-              {t('groups.delete_group')}
-            </button>
-          )}
-        </div>
+        )}
       </div>
     </div>
-  )
+  </div>
+)
 }
