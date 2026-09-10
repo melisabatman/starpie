@@ -42,24 +42,22 @@ export async function createGroup({
 
   const supabase = await createClient()
 
-  // 1. Insert Group record
-  const { data: newGroup, error: groupError } = await supabase
+  // 1. Insert Group record with pre-generated UUID to avoid RLS SELECT restrictions on new records
+  const groupId = crypto.randomUUID()
+  const { error: groupError } = await supabase
     .from('groups')
     .insert({
+      id: groupId,
       name: trimmedName,
       description: description?.trim() || null,
       avatar_url: avatarUrl || null,
       created_by: user.id,
     })
-    .select('id')
-    .single()
 
-  if (groupError || !newGroup) {
+  if (groupError) {
     console.error('Error creating group:', groupError)
     return { success: false, error: groupError?.message || 'Grup oluşturulamadı.' }
   }
-
-  const groupId = newGroup.id
 
   // 2. Insert creator as Admin
   const membersToInsert = [

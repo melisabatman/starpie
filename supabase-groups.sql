@@ -88,10 +88,10 @@ alter table public.group_members enable row level security;
 alter table public.group_messages enable row level security;
 
 -- 7. RLS Politikaları — groups
--- SELECT: Yalnızca grubun üyesi olan kullanıcılar görebilir
+-- SELECT: Yalnızca grubun üyesi veya grubu oluşturan kullanıcılar görebilir
 create policy "Group members can view groups"
   on public.groups for select
-  using (public.is_group_member(id, auth.uid()));
+  using (created_by = auth.uid() or public.is_group_member(id, auth.uid()));
 
 -- INSERT: Giriş yapmış kullanıcılar yeni grup oluşturabilir
 create policy "Authenticated users can create groups"

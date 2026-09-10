@@ -116,11 +116,16 @@ export default function CreateGroupModal({
     )
   }
 
-  // Submit Handler
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+  // Main Group Creation Handler
+  const handleCreateGroup = async (e?: React.FormEvent) => {
+    if (e) {
+      e.preventDefault()
+      e.stopPropagation()
+    }
 
-    // If name is empty, auto-generate from selected friends or default
+    if (isSubmitting) return
+
+    // Auto-generate name from selected friends if left blank
     let finalName = name.trim()
     if (!finalName) {
       if (selectedFriendIds.length > 0) {
@@ -141,22 +146,27 @@ export default function CreateGroupModal({
 
       // Upload group photo if selected
       if (photoFile) {
-        const supabase = createClient()
-        const ext = photoFile.name.split('.').pop() || 'jpg'
-        const fileName = `${currentUserId}/${Date.now()}_${Math.random().toString(36).substring(2, 8)}.${ext}`
+        try {
+          const supabase = createClient()
+          const ext = photoFile.name.split('.').pop() || 'jpg'
+          const fileName = `${currentUserId}/${Date.now()}_${Math.random().toString(36).substring(2, 8)}.${ext}`
 
-        const { error: uploadError } = await supabase.storage
-          .from('group-photos')
-          .upload(fileName, photoFile, { contentType: photoFile.type })
+          const { error: uploadError } = await supabase.storage
+            .from('group-photos')
+            .upload(fileName, photoFile, { contentType: photoFile.type })
 
-        if (!uploadError) {
-          const { data: urlData } = supabase.storage.from('group-photos').getPublicUrl(fileName)
-          avatarUrl = urlData.publicUrl
-        } else {
-          console.warn('Group photo upload warning:', uploadError)
+          if (!uploadError) {
+            const { data: urlData } = supabase.storage.from('group-photos').getPublicUrl(fileName)
+            avatarUrl = urlData.publicUrl
+          } else {
+            console.warn('Group photo upload warning:', uploadError)
+          }
+        } catch (uploadErr) {
+          console.warn('Photo upload skipped due to error:', uploadErr)
         }
       }
 
+      console.log('Creating group:', { name: finalName, memberUserIds: selectedFriendIds })
       const res = await createGroup({
         name: finalName,
         description: description.trim() || null,
@@ -165,19 +175,31 @@ export default function CreateGroupModal({
       })
 
       if (res.success && res.groupId) {
+        const newGroupId = res.groupId
         handleClose()
         if (onGroupCreated) {
-          onGroupCreated(res.groupId)
+          onGroupCreated(newGroupId)
         } else {
-          router.push(`/messages/group/${res.groupId}`)
+          router.push(`/messages/group/${newGroupId}`)
+          router.refresh()
+          setTimeout(() => {
+            if (typeof window !== 'undefined' && window.location.pathname !== `/messages/group/${newGroupId}`) {
+              window.location.href = `/messages/group/${newGroupId}`
+            }
+          }, 350)
         }
       } else {
-        setErrorMsg(res.error || (lang === 'tr' ? 'Grup oluşturulamadı.' : 'Failed to create group.'))
+        const errorText = res.error || (lang === 'tr' ? 'Grup oluşturulamadı.' : 'Failed to create group.')
+        console.error('Group creation failed:', errorText)
+        setErrorMsg(errorText)
+        alert(errorText)
         setIsSubmitting(false)
       }
     } catch (err: any) {
       console.error('Error in create group:', err)
-      setErrorMsg(err.message || (lang === 'tr' ? 'Beklenmeyen bir hata oluştu.' : 'An error occurred.'))
+      const errorText = err.message || (lang === 'tr' ? 'Beklenmeyen bir hata oluştu.' : 'An error occurred.')
+      setErrorMsg(errorText)
+      alert(errorText)
       setIsSubmitting(false)
     }
   }
@@ -190,25 +212,27 @@ export default function CreateGroupModal({
 
   return (
     <div className="group-modal-backdrop" onClick={handleClose}>
-      {/* Container is directly the form to guarantee 100% flex height calculation */}
-      <form
-        onSubmit={handleSubmit}
+      <div
         className="group-modal-container"
         onClick={e => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
       >
-        {/* 1. Fixed Header (Always pinned at top) */}
+        {/* 1. Modal Header (Pinned at Top) */}
         <div className="group-modal-header">
           <div>
-            <h3 className="group-modal-title">{t('groups.create_title')}</h3>
-            <p className="group-modal-sub">{t('groups.create_sub')}</p>
+            <h3 className="group-modal-title">
+              {t('groups.create_title') || (lang === 'tr' ? 'Yeni Grup Oluştur' : 'Create New Group')}
+            </h3>
+            <p className="group-modal-sub">
+              {t('groups.create_sub') || (lang === 'tr' ? 'Arkadaşlarınla sohbet etmek için grup oluştur' : 'Create a group to chat with friends')}
+            </p>
           </div>
           <button
             type="button"
             className="group-modal-close-btn"
             onClick={handleClose}
-            aria-label={t('nav.close')}
+            aria-label={t('nav.close') || 'Kapat'}
             disabled={isSubmitting}
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
@@ -218,30 +242,35 @@ export default function CreateGroupModal({
           </button>
         </div>
 
-        {/* 2. Scrollable Body (Takes available height, scrolls internally) */}
-        <div className="group-modal-body">
-          {errorMsg && <div className="group-modal-alert group-modal-alert--error">{errorMsg}</div>}
+        {/* Error Alert if any */}
+        {errorMsg && (
+          <div className="group-modal-alert-bar">
+            <span>{errorMsg}</span>
+            <button type="button" onClick={() => setErrorMsg(null)}>×</button>
+          </div>
+        )}
 
-          {/* Group Photo & Name Row */}
-          <div className="group-modal-photo-name-row">
-            {/* Avatar Upload */}
+        {/* 2. Top Group Info Card (PINNED - NEVER SCROLLS, ALWAYS VISIBLE) */}
+        <div className="group-modal-info-card">
+          <div className="group-modal-info-row">
+            {/* Photo Picker */}
             <div
               className="group-modal-photo-picker"
               onClick={() => fileInputRef.current?.click()}
-              title={t('groups.photo_label')}
+              title={lang === 'tr' ? 'Grup Fotoğrafı Seç' : 'Choose Group Photo'}
             >
               {photoPreview ? (
                 <Image
                   src={photoPreview}
                   alt="Grup Fotoğrafı"
-                  width={56}
-                  height={56}
+                  width={58}
+                  height={58}
                   className="group-modal-photo-img"
                   style={{ objectFit: 'cover' }}
                 />
               ) : (
                 <div className="group-modal-photo-placeholder">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
                     <circle cx="12" cy="13" r="4" />
                   </svg>
@@ -259,206 +288,162 @@ export default function CreateGroupModal({
             </div>
 
             {/* Name Input */}
-            <div className="group-modal-name-group">
-              <label className="group-modal-label">
-                {t('groups.name_label')} <span style={{ color: 'var(--pink-600)' }}>*</span>
+            <div className="group-modal-name-wrapper">
+              <label className="group-modal-field-label">
+                <span>{t('groups.name_label') || (lang === 'tr' ? 'Grup Adı' : 'Group Name')}</span>
+                {!name.trim() && (
+                  <span className="group-modal-optional-hint">
+                    {lang === 'tr' ? '(Boş bırakılırsa otomatik ad verilir)' : '(Auto-named if blank)'}
+                  </span>
+                )}
               </label>
               <input
                 ref={nameInputRef}
                 type="text"
-                className="group-modal-input"
-                placeholder={t('groups.name_placeholder')}
+                className="group-modal-input-primary"
+                placeholder={t('groups.name_placeholder') || (lang === 'tr' ? 'Örn. Sinema Grubu, Proje Ekibi...' : 'e.g. Cinema Club, Project Team...')}
                 value={name}
                 onChange={e => setName(e.target.value)}
                 maxLength={100}
-                required
                 disabled={isSubmitting}
                 autoFocus
               />
             </div>
           </div>
 
-          {/* Description (Optional) */}
-          <div className="group-modal-field">
-            <label className="group-modal-label">{t('groups.desc_label')}</label>
-            <textarea
-              className="group-modal-textarea"
-              placeholder={t('groups.desc_placeholder')}
+          {/* Description Row (Optional) */}
+          <div className="group-modal-desc-row">
+            <input
+              type="text"
+              className="group-modal-input-sub"
+              placeholder={t('groups.desc_placeholder') || (lang === 'tr' ? 'Grup açıklaması ekle (isteğe bağlı)...' : 'Add group description (optional)...')}
               value={description}
               onChange={e => setDescription(e.target.value)}
-              maxLength={500}
-              rows={2}
+              maxLength={300}
+              disabled={isSubmitting}
+            />
+          </div>
+        </div>
+
+        {/* 3. Friend Selection Section (Takes available height, cleanly scrolls) */}
+        <div className="group-modal-friends-section">
+          <div className="group-modal-friends-header">
+            <label className="group-modal-field-label" style={{ margin: 0 }}>
+              {t('groups.select_friends') || (lang === 'tr' ? 'Arkadaş Ekle' : 'Add Friends')}
+            </label>
+            <span className="group-modal-selected-pill">
+              {selectedFriendIds.length > 0
+                ? (lang === 'tr' ? `${selectedFriendIds.length} kişi seçildi` : `${selectedFriendIds.length} selected`)
+                : (lang === 'tr' ? 'Kimse seçilmedi' : 'None selected')}
+            </span>
+          </div>
+
+          {/* Selected Chips */}
+          {selectedFriendIds.length > 0 && (
+            <div className="group-modal-selected-chips">
+              {selectedFriendIds.map(fid => {
+                const fr = friends.find(f => f.friend?.id === fid)?.friend
+                if (!fr) return null
+                return (
+                  <div
+                    key={fid}
+                    className="group-modal-chip"
+                    onClick={() => toggleFriend(fid)}
+                    title={lang === 'tr' ? 'Çıkarmak için tıkla' : 'Click to remove'}
+                  >
+                    <span className="group-modal-chip__name">
+                      {fr.full_name?.split(' ')[0] || 'Üye'}
+                    </span>
+                    <span className="group-modal-chip__remove">×</span>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+
+          {/* Search Friend Input */}
+          <div className="group-modal-search-box">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="11" cy="11" r="8" />
+              <line x1="21" y1="21" x2="16.65" y2="16.65" />
+            </svg>
+            <input
+              type="search"
+              className="group-modal-search-input"
+              placeholder={t('friends.search_placeholder') || (lang === 'tr' ? 'Arkadaş ara...' : 'Search friends...')}
+              value={searchFilter}
+              onChange={e => setSearchFilter(e.target.value)}
               disabled={isSubmitting}
             />
           </div>
 
-          {/* Member Selection Section */}
-          <div className="group-modal-section">
-            <div className="group-modal-section-header">
-              <label className="group-modal-label" style={{ marginBottom: 0 }}>
-                {t('groups.select_friends')}
-                <span className="group-modal-selected-badge">
-                  {selectedFriendIds.length} {lang === 'tr' ? 'seçildi' : 'selected'}
-                </span>
-              </label>
-            </div>
+          {/* Friend List (Only this list scrolls if items exceed height) */}
+          <div className="group-modal-friends-scroll">
+            {isLoadingFriends ? (
+              <div className="group-modal-loading">{t('common.loading')}</div>
+            ) : friends.length === 0 ? (
+              <p className="group-modal-empty-hint">
+                {lang === 'tr'
+                  ? 'Henüz arkadaşınız yok. Grubu şimdi kurup daha sonra da arkadaş ekleyebilirsiniz.'
+                  : 'No friends found. You can create the group now and invite later.'}
+              </p>
+            ) : filteredFriends.length === 0 ? (
+              <p className="group-modal-empty-hint">{t('friends.search_empty')}</p>
+            ) : (
+              filteredFriends.map(({ friend }) => {
+                if (!friend) return null
+                const isSelected = selectedFriendIds.includes(friend.id)
+                const initials = friend.full_name
+                  ? friend.full_name
+                      .split(' ')
+                      .map(n => n[0])
+                      .join('')
+                      .toUpperCase()
+                      .slice(0, 2)
+                  : '?'
 
-            {/* Selected Friends Horizontal Chips (Instagram / WhatsApp style) */}
-            {selectedFriendIds.length > 0 && (
-              <div className="group-modal-selected-chips">
-                {selectedFriendIds.map(fid => {
-                  const fr = friends.find(f => f.friend?.id === fid)?.friend
-                  if (!fr) return null
-                  return (
-                    <div
-                      key={fid}
-                      className="group-modal-chip"
-                      onClick={() => toggleFriend(fid)}
-                      title={lang === 'tr' ? 'Çıkarmak için tıkla' : 'Click to remove'}
-                    >
-                      <span className="group-modal-chip__name">
-                        {fr.full_name?.split(' ')[0] || 'Üye'}
-                      </span>
-                      <span className="group-modal-chip__remove">×</span>
+                return (
+                  <div
+                    key={friend.id}
+                    className={`group-friend-row ${isSelected ? 'group-friend-row--selected' : ''}`}
+                    onClick={() => toggleFriend(friend.id)}
+                  >
+                    <div className="group-friend-row__avatar">
+                      {friend.avatar_url ? (
+                        <Image
+                          src={friend.avatar_url}
+                          alt={friend.full_name || 'Friend'}
+                          width={34}
+                          height={34}
+                          style={{ objectFit: 'cover', borderRadius: '50%' }}
+                        />
+                      ) : (
+                        <span className="group-friend-row__fallback">{initials}</span>
+                      )}
                     </div>
-                  )
-                })}
-              </div>
+
+                    <div className="group-friend-row__info">
+                      <span className="group-friend-row__name">{friend.full_name || 'User'}</span>
+                      {friend.profession && (
+                        <span className="group-friend-row__sub">{friend.profession}</span>
+                      )}
+                    </div>
+
+                    <div className={`group-checkbox ${isSelected ? 'group-checkbox--checked' : ''}`}>
+                      {isSelected && (
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                          <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                      )}
+                    </div>
+                  </div>
+                )
+              })
             )}
-
-            {/* Friend Search Input */}
-            <div className="group-modal-search-box">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="11" cy="11" r="8" />
-                <line x1="21" y1="21" x2="16.65" y2="16.65" />
-              </svg>
-              <input
-                type="search"
-                className="group-modal-search-input"
-                placeholder={t('friends.search_placeholder')}
-                value={searchFilter}
-                onChange={e => setSearchFilter(e.target.value)}
-                disabled={isSubmitting}
-              />
-            </div>
-
-            {/* Friends List Scroll Area (own self-contained scrolling list) */}
-            <div className="group-modal-friends-list">
-              {isLoadingFriends ? (
-                <div className="group-modal-loading">{t('common.loading')}</div>
-              ) : friends.length === 0 ? (
-                <p className="group-modal-empty-hint">
-                  {lang === 'tr'
-                    ? 'Henüz arkadaşın yok. Grubu şimdi kurup daha sonra da arkadaş ekleyebilirsin.'
-                    : 'No friends found. You can create the group now and invite later.'}
-                </p>
-              ) : filteredFriends.length === 0 ? (
-                <p className="group-modal-empty-hint">{t('friends.search_empty')}</p>
-              ) : (
-                filteredFriends.map(({ friend }) => {
-                  if (!friend) return null
-                  const isSelected = selectedFriendIds.includes(friend.id)
-                  const initials = friend.full_name
-                    ? friend.full_name
-                        .split(' ')
-                        .map(n => n[0])
-                        .join('')
-                        .toUpperCase()
-                        .slice(0, 2)
-                    : '?'
-
-                  return (
-                    <div
-                      key={friend.id}
-                      className={`group-friend-row ${isSelected ? 'group-friend-row--selected' : ''}`}
-                      onClick={() => toggleFriend(friend.id)}
-                    >
-                      <div className="group-friend-row__avatar">
-                        {friend.avatar_url ? (
-                          <Image
-                            src={friend.avatar_url}
-                            alt={friend.full_name || 'Friend'}
-                            width={32}
-                            height={32}
-                            style={{ objectFit: 'cover', borderRadius: '50%' }}
-                          />
-                        ) : (
-                          <span className="group-friend-row__fallback">{initials}</span>
-                        )}
-                      </div>
-
-                      <div className="group-friend-row__info">
-                        <span className="group-friend-row__name">{friend.full_name || 'User'}</span>
-                        {friend.profession && (
-                          <span className="group-friend-row__sub">{friend.profession}</span>
-                        )}
-                      </div>
-
-                      <div className={`group-checkbox ${isSelected ? 'group-checkbox--checked' : ''}`}>
-                        {isSelected && (
-                          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                            <polyline points="20 6 9 17 4 12" />
-                          </svg>
-                        )}
-                      </div>
-                    </div>
-                  )
-                })
-              )}
-            </div>
-
-            {/* In-flow Action: Appears right after friend selection when scrolling down */}
-            <div className="group-modal-inflow-action">
-              <button
-                type="submit"
-                id="create-group-inflow-btn"
-                className="btn btn--primary btn-group-submit-inflow"
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? (
-                  <>
-                    <span className="spinner-dots" style={{ marginRight: '8px' }}></span>
-                    {t('groups.creating') || (lang === 'tr' ? 'Grup Kuruluyor...' : 'Creating Group...')}
-                  </>
-                ) : (
-                  <>
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '8px' }}>
-                      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-                      <circle cx="9" cy="7" r="4" />
-                      <line x1="19" y1="8" x2="19" y2="14" />
-                      <line x1="22" y1="11" x2="16" y2="11" />
-                    </svg>
-                    {selectedFriendIds.length > 0
-                      ? (lang === 'tr' ? `Grup Kur (${selectedFriendIds.length} Kişi Seçildi)` : `Create Group (${selectedFriendIds.length} Selected)`)
-                      : (lang === 'tr' ? 'Grup Kur' : 'Create Group')}
-                  </>
-                )}
-              </button>
-            </div>
           </div>
         </div>
 
-        {/* Floating Quick Action Bar when friends are selected */}
-        {selectedFriendIds.length > 0 && (
-          <div className="group-modal-floating-bar">
-            <div className="group-modal-floating-info">
-              <span className="group-modal-floating-count">{selectedFriendIds.length}</span>
-              <span>{lang === 'tr' ? 'kişi seçildi' : 'selected'}</span>
-            </div>
-            <button
-              type="submit"
-              className="btn-group-floating-submit"
-              disabled={isSubmitting}
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="20 6 9 17 4 12" />
-              </svg>
-              <span>{lang === 'tr' ? 'Grup Kur' : 'Create Group'}</span>
-            </button>
-          </div>
-        )}
-
-        {/* 3. Pinned / Sticky Footer - GUARANTEED 100% VISIBLE AND CLICKABLE */}
+        {/* 4. Modal Footer (PINNED AT BOTTOM - ALWAYS 100% VISIBLE) */}
         <div className="group-modal-footer">
           <button
             type="button"
@@ -469,32 +454,35 @@ export default function CreateGroupModal({
             {t('common.cancel') || (lang === 'tr' ? 'Vazgeç' : 'Cancel')}
           </button>
           <button
-            type="submit"
-            id="create-group-submit-btn"
-            className="btn btn--primary btn-create-group-submit"
+            type="button"
+            id="create-group-main-btn"
+            className="btn btn--primary btn-create-group-main"
+            onClick={handleCreateGroup}
             disabled={isSubmitting}
           >
             {isSubmitting ? (
               <>
-                <span className="spinner-dots" style={{ marginRight: '6px' }}></span>
-                {t('groups.creating') || (lang === 'tr' ? 'Grup Kuruluyor...' : 'Creating...')}
+                <span className="spinner-dots" style={{ marginRight: '8px' }}></span>
+                <span>{t('groups.creating') || (lang === 'tr' ? 'Grup Kuruluyor...' : 'Creating Group...')}</span>
               </>
             ) : (
               <>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '6px' }}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '8px' }}>
                   <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
                   <circle cx="9" cy="7" r="4" />
                   <line x1="19" y1="8" x2="19" y2="14" />
                   <line x1="22" y1="11" x2="16" y2="11" />
                 </svg>
-                {selectedFriendIds.length > 0
-                  ? (lang === 'tr' ? `Grup Kur (${selectedFriendIds.length})` : `Create (${selectedFriendIds.length})`)
-                  : (lang === 'tr' ? 'Grup Kur' : 'Create Group')}
+                <span>
+                  {selectedFriendIds.length > 0
+                    ? (lang === 'tr' ? `Grup Kur (${selectedFriendIds.length} Kişi)` : `Create Group (${selectedFriendIds.length})`)
+                    : (lang === 'tr' ? 'Grup Kur' : 'Create Group')}
+                </span>
               </>
             )}
           </button>
         </div>
-      </form>
+      </div>
     </div>
   )
 }
