@@ -222,7 +222,7 @@ export const translations = {
     'groups.photo_label': 'Grup Fotoğrafı',
     'groups.select_friends': 'Üye Ekle',
     'groups.select_friends_sub': 'Gruba eklemek istediğin arkadaşları seç',
-    'groups.create_btn': 'Grubu Kur',
+    'groups.create_btn': 'Grup Kur',
     'groups.creating': 'Grup Kuruluyor...',
     'groups.members_count': '{count} üye',
     'groups.members': 'Grup Üyeleri',

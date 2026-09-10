@@ -13,6 +13,7 @@ interface CreateGroupModalProps {
   isOpen: boolean
   onClose: () => void
   currentUserId: string
+  initialFriends?: Friend[]
   onGroupCreated?: (groupId: string) => void
 }
 
@@ -20,6 +21,7 @@ export default function CreateGroupModal({
   isOpen,
   onClose,
   currentUserId,
+  initialFriends,
   onGroupCreated,
 }: CreateGroupModalProps) {
   const { t, lang } = useLanguage()
@@ -30,7 +32,7 @@ export default function CreateGroupModal({
   const [photoFile, setPhotoFile] = useState<File | null>(null)
   const [photoPreview, setPhotoPreview] = useState<string | null>(null)
 
-  const [friends, setFriends] = useState<Friend[]>([])
+  const [friends, setFriends] = useState<Friend[]>(initialFriends || [])
   const [selectedFriendIds, setSelectedFriendIds] = useState<string[]>([])
   const [searchFilter, setSearchFilter] = useState('')
 
@@ -39,10 +41,17 @@ export default function CreateGroupModal({
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
 
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const nameInputRef = useRef<HTMLInputElement>(null)
 
   // Fetch friends when modal opens
   useEffect(() => {
     if (!isOpen) return
+
+    if (initialFriends && initialFriends.length > 0) {
+      setFriends(initialFriends)
+      setIsLoadingFriends(false)
+      return
+    }
 
     let isMounted = true
     setIsLoadingFriends(true)
@@ -113,6 +122,7 @@ export default function CreateGroupModal({
     const trimmedName = name.trim()
     if (!trimmedName) {
       setErrorMsg(lang === 'tr' ? 'Lütfen bir grup adı girin.' : 'Please enter a group name.')
+      nameInputRef.current?.focus()
       return
     }
 
@@ -247,6 +257,7 @@ export default function CreateGroupModal({
                 {t('groups.name_label')} <span style={{ color: 'var(--pink-600)' }}>*</span>
               </label>
               <input
+                ref={nameInputRef}
                 type="text"
                 className="group-modal-input"
                 placeholder={t('groups.name_placeholder')}
@@ -399,17 +410,18 @@ export default function CreateGroupModal({
             onClick={handleClose}
             disabled={isSubmitting}
           >
-            {t('common.cancel')}
+            {t('common.cancel') || (lang === 'tr' ? 'Vazgeç' : 'Cancel')}
           </button>
           <button
             type="submit"
+            id="create-group-submit-btn"
             className="btn btn--primary btn-create-group-submit"
-            disabled={isSubmitting || !name.trim()}
+            disabled={isSubmitting}
           >
             {isSubmitting ? (
               <>
                 <span className="spinner-dots" style={{ marginRight: '6px' }}></span>
-                {t('groups.creating')}
+                {t('groups.creating') || (lang === 'tr' ? 'Grup Kuruluyor...' : 'Creating...')}
               </>
             ) : (
               <>
@@ -419,7 +431,7 @@ export default function CreateGroupModal({
                   <line x1="19" y1="8" x2="19" y2="14" />
                   <line x1="22" y1="11" x2="16" y2="11" />
                 </svg>
-                {t('groups.create_btn')}
+                {t('groups.create_btn') || (lang === 'tr' ? 'Grup Kur' : 'Create Group')}
               </>
             )}
           </button>
