@@ -88,29 +88,30 @@ alter table public.group_members enable row level security;
 alter table public.group_messages enable row level security;
 
 -- 7. RLS Politikaları — groups
--- SELECT: Yalnızca grubun üyesi veya grubu oluşturan kullanıcılar görebilir
+drop policy if exists "Group members can view groups" on public.groups;
 create policy "Group members can view groups"
   on public.groups for select
   using (created_by = auth.uid() or public.is_group_member(id, auth.uid()));
 
--- INSERT: Giriş yapmış kullanıcılar yeni grup oluşturabilir
+drop policy if exists "Authenticated users can create groups" on public.groups;
 create policy "Authenticated users can create groups"
   on public.groups for insert
-  with check (auth.role() = 'authenticated' and auth.uid() = created_by);
+  to authenticated
+  with check (true);
 
--- UPDATE: Yalnızca grup yöneticileri (admin) grup bilgilerini değiştirebilir
+drop policy if exists "Group admins can update group info" on public.groups;
 create policy "Group admins can update group info"
   on public.groups for update
-  using (public.is_group_admin(id, auth.uid()))
-  with check (public.is_group_admin(id, auth.uid()));
+  using (created_by = auth.uid() or public.is_group_admin(id, auth.uid()))
+  with check (created_by = auth.uid() or public.is_group_admin(id, auth.uid()));
 
--- DELETE: Yalnızca grup yöneticileri (admin) grubu silebilir
+drop policy if exists "Group admins can delete groups" on public.groups;
 create policy "Group admins can delete groups"
   on public.groups for delete
-  using (public.is_group_admin(id, auth.uid()));
+  using (created_by = auth.uid() or public.is_group_admin(id, auth.uid()));
 
 -- 8. RLS Politikaları — group_members
--- SELECT: Kullanıcı kendi üyeliğini veya üyesi olduğu grubun diğer üyelerini görebilir
+drop policy if exists "Members can view other members of their groups" on public.group_members;
 create policy "Members can view other members of their groups"
   on public.group_members for select
   using (
@@ -118,27 +119,26 @@ create policy "Members can view other members of their groups"
     or public.is_group_member(group_id, auth.uid())
   );
 
--- INSERT: Grup admini yeni üye ekleyebilir; ya da grup oluşturucu ilk üyeleri ekleyebilir
+drop policy if exists "Admins or creators can add group members" on public.group_members;
 create policy "Admins or creators can add group members"
   on public.group_members for insert
+  to authenticated
   with check (
-    auth.role() = 'authenticated'
-    and (
-      public.is_group_admin(group_id, auth.uid())
-      or exists (
-        select 1 from public.groups g
-        where g.id = group_members.group_id and g.created_by = auth.uid()
-      )
+    user_id = auth.uid()
+    or public.is_group_admin(group_id, auth.uid())
+    or exists (
+      select 1 from public.groups g
+      where g.id = group_members.group_id and g.created_by = auth.uid()
     )
   );
 
--- UPDATE: Yalnızca grup yöneticisi üye rolünü değiştirebilir
+drop policy if exists "Admins can update member roles" on public.group_members;
 create policy "Admins can update member roles"
   on public.group_members for update
   using (public.is_group_admin(group_id, auth.uid()))
   with check (public.is_group_admin(group_id, auth.uid()));
 
--- DELETE: Üye kendisi gruptan ayrılabilir VEYA yönetici başka bir üyeyi çıkarabilir
+drop policy if exists "Members can leave or admins can remove members" on public.group_members;
 create policy "Members can leave or admins can remove members"
   on public.group_members for delete
   using (
@@ -147,12 +147,12 @@ create policy "Members can leave or admins can remove members"
   );
 
 -- 9. RLS Politikaları — group_messages
--- SELECT: Yalnızca grup üyeleri gruptaki mesajları okuyabilir
+drop policy if exists "Group members can view group messages" on public.group_messages;
 create policy "Group members can view group messages"
   on public.group_messages for select
   using (public.is_group_member(group_id, auth.uid()));
 
--- INSERT: Yalnızca grup üyeleri kendi adlarına mesaj gönderebilir
+drop policy if exists "Group members can send messages" on public.group_messages;
 create policy "Group members can send messages"
   on public.group_messages for insert
   with check (
@@ -160,7 +160,7 @@ create policy "Group members can send messages"
     and public.is_group_member(group_id, auth.uid())
   );
 
--- DELETE: Gönderen kendi mesajını veya grup admini herhangi bir mesajı silebilir
+drop policy if exists "Senders or admins can delete group messages" on public.group_messages;
 create policy "Senders or admins can delete group messages"
   on public.group_messages for delete
   using (
