@@ -3,8 +3,9 @@
 import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { sendGroupMessage } from '@/lib/actions/groups'
+import { sendGroupMessage, deleteGroup } from '@/lib/actions/groups'
 import AudioMessagePlayer from '@/components/AudioMessagePlayer'
 import GroupInfoModal from '@/components/GroupInfoModal'
 import { useLanguage } from '@/components/LanguageProvider'
@@ -69,6 +70,7 @@ export default function GroupChatWindow({
   initialMessages,
 }: GroupChatWindowProps) {
   const { t, lang } = useLanguage()
+  const router = useRouter()
 
   const [group, setGroup] = useState<Group>(initialGroup)
   const [members, setMembers] = useState<GroupMember[]>(initialMembers)
@@ -246,6 +248,28 @@ export default function GroupChatWindow({
     } finally {
       setIsSending(false)
       inputRef.current?.focus()
+    }
+  }
+
+  // Quick Delete Group (Admin)
+  const handleDeleteGroup = async () => {
+    if (currentUserRole !== 'admin') return
+    const confirmMsg =
+      lang === 'tr'
+        ? `"${group.name}" grubunu ve tüm sohbet geçmişini kalıcı olarak silmek istediğinden emin misin? Bu işlem geri alınamaz!`
+        : `Are you sure you want to permanently delete "${group.name}"? This cannot be undone!`
+
+    if (!window.confirm(confirmMsg)) return
+
+    try {
+      const res = await deleteGroup(group.id)
+      if (res.success) {
+        router.push('/messages')
+      } else {
+        alert(res.error || (lang === 'tr' ? 'Grup silinemedi.' : 'Failed to delete group.'))
+      }
+    } catch (err: any) {
+      alert(err.message || 'Hata oluştu.')
     }
   }
 
@@ -441,8 +465,23 @@ export default function GroupChatWindow({
           </div>
         </div>
 
-        {/* Header Right: Group Info Drawer Trigger */}
-        <div className="chat-header__right">
+        {/* Header Right: Group Info Drawer Trigger & Quick Delete */}
+        <div className="chat-header__right group-chat-header-actions">
+          {currentUserRole === 'admin' && (
+            <button
+              type="button"
+              className="btn-chat-delete-group"
+              onClick={handleDeleteGroup}
+              title={lang === 'tr' ? 'Grubu Sil' : 'Delete Group'}
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="3 6 5 6 21 6" />
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+              </svg>
+              <span>{lang === 'tr' ? 'Grubu Sil' : 'Delete'}</span>
+            </button>
+          )}
+
           <button
             type="button"
             className="group-info-toggle-btn"
@@ -454,6 +493,7 @@ export default function GroupChatWindow({
               <line x1="12" y1="16" x2="12" y2="12" />
               <line x1="12" y1="8" x2="12.01" y2="8" />
             </svg>
+            <span className="group-info-toggle-text">{lang === 'tr' ? 'Grup Bilgisi' : 'Info'}</span>
           </button>
         </div>
       </div>

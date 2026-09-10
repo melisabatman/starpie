@@ -119,11 +119,18 @@ export default function CreateGroupModal({
   // Submit Handler
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    const trimmedName = name.trim()
-    if (!trimmedName) {
-      setErrorMsg(lang === 'tr' ? 'Lütfen bir grup adı girin.' : 'Please enter a group name.')
-      nameInputRef.current?.focus()
-      return
+
+    // If name is empty, auto-generate from selected friends or default
+    let finalName = name.trim()
+    if (!finalName) {
+      if (selectedFriendIds.length > 0) {
+        const friendNames = selectedFriendIds
+          .map(id => friends.find(f => f.friend?.id === id)?.friend?.full_name?.split(' ')[0])
+          .filter(Boolean)
+        finalName = (friendNames.slice(0, 3).join(', ') || 'Yeni') + (lang === 'tr' ? ' Grubu' : ' Group')
+      } else {
+        finalName = lang === 'tr' ? 'Yeni Grup' : 'New Group'
+      }
     }
 
     setIsSubmitting(true)
@@ -151,7 +158,7 @@ export default function CreateGroupModal({
       }
 
       const res = await createGroup({
-        name: trimmedName,
+        name: finalName,
         description: description.trim() || null,
         avatarUrl,
         memberUserIds: selectedFriendIds,
@@ -399,8 +406,57 @@ export default function CreateGroupModal({
                 })
               )}
             </div>
+
+            {/* In-flow Action: Appears right after friend selection when scrolling down */}
+            <div className="group-modal-inflow-action">
+              <button
+                type="submit"
+                id="create-group-inflow-btn"
+                className="btn btn--primary btn-group-submit-inflow"
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? (
+                  <>
+                    <span className="spinner-dots" style={{ marginRight: '8px' }}></span>
+                    {t('groups.creating') || (lang === 'tr' ? 'Grup Kuruluyor...' : 'Creating Group...')}
+                  </>
+                ) : (
+                  <>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '8px' }}>
+                      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                      <circle cx="9" cy="7" r="4" />
+                      <line x1="19" y1="8" x2="19" y2="14" />
+                      <line x1="22" y1="11" x2="16" y2="11" />
+                    </svg>
+                    {selectedFriendIds.length > 0
+                      ? (lang === 'tr' ? `Grup Kur (${selectedFriendIds.length} Kişi Seçildi)` : `Create Group (${selectedFriendIds.length} Selected)`)
+                      : (lang === 'tr' ? 'Grup Kur' : 'Create Group')}
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </div>
+
+        {/* Floating Quick Action Bar when friends are selected */}
+        {selectedFriendIds.length > 0 && (
+          <div className="group-modal-floating-bar">
+            <div className="group-modal-floating-info">
+              <span className="group-modal-floating-count">{selectedFriendIds.length}</span>
+              <span>{lang === 'tr' ? 'kişi seçildi' : 'selected'}</span>
+            </div>
+            <button
+              type="submit"
+              className="btn-group-floating-submit"
+              disabled={isSubmitting}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+              <span>{lang === 'tr' ? 'Grup Kur' : 'Create Group'}</span>
+            </button>
+          </div>
+        )}
 
         {/* 3. Pinned / Sticky Footer - GUARANTEED 100% VISIBLE AND CLICKABLE */}
         <div className="group-modal-footer">
@@ -431,7 +487,9 @@ export default function CreateGroupModal({
                   <line x1="19" y1="8" x2="19" y2="14" />
                   <line x1="22" y1="11" x2="16" y2="11" />
                 </svg>
-                {t('groups.create_btn') || (lang === 'tr' ? 'Grup Kur' : 'Create Group')}
+                {selectedFriendIds.length > 0
+                  ? (lang === 'tr' ? `Grup Kur (${selectedFriendIds.length})` : `Create (${selectedFriendIds.length})`)
+                  : (lang === 'tr' ? 'Grup Kur' : 'Create Group')}
               </>
             )}
           </button>
